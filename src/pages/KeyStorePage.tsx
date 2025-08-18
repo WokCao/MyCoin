@@ -2,6 +2,7 @@ import { useState } from "react"
 import { Eye, EyeOff, X, Check, AlertTriangle, Shield, Share, HardDrive, Wallet } from "lucide-react"
 import Header from "../components/Header"
 import { Link, useNavigate } from "react-router-dom"
+import { LoadingSpinner } from "../components/LoadingSpinner"
 
 const KeyStorePage = () => {
     const [currentStep, setCurrentStep] = useState(1)
@@ -9,6 +10,9 @@ const KeyStorePage = () => {
     const [confirmPassword, setConfirmPassword] = useState("")
     const [showPassword, setShowPassword] = useState(false)
     const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+    const [passwordError, setPasswordError] = useState("")
+    const [confirmPasswordError, setConfirmPasswordError] = useState("")
+    const [isLoading, setLoading] = useState(false);
     const navigate = useNavigate();
 
     const steps = [
@@ -30,20 +34,54 @@ const KeyStorePage = () => {
     ]
 
     const handleCreateWallet = () => {
-        if (password && confirmPassword && password === confirmPassword) {
-            setCurrentStep(2)
+        if (password && confirmPassword && password === confirmPassword && password.length >= 8) {
+            setLoading(true);
+            setTimeout(() => {
+                setCurrentStep(2)
+                setLoading(false)
+            }, 2000)
         }
     }
 
     const handleDownload = () => {
-        setCurrentStep(3)
+        setLoading(true);
+        setTimeout(() => {
+            setCurrentStep(3)
+            setLoading(false)
+        }, 2000)
     }
 
     const handleBack = () => {
         if (currentStep > 1) {
             setCurrentStep(currentStep - 1)
+            setLoading(false)
         } else {
             navigate('/wallet/create/overview')
+        }
+    }
+
+    const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value.trim();
+        setPassword(value);
+        if (value.length < 8) {
+            setPasswordError("Password length must be at least 8.")
+        } else {
+            if (value === confirmPassword || confirmPassword.length === 0) {
+                setConfirmPasswordError("");
+            } else {
+                setConfirmPasswordError("Password doesn't match.")
+            }
+            setPasswordError("");
+        }
+    }
+
+    const handleConfirmPasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value.trim();
+        setConfirmPassword(value);
+        if (value !== password) {
+            setConfirmPasswordError("Password doesn't match.")
+        } else {
+            setConfirmPasswordError("");
         }
     }
 
@@ -105,8 +143,10 @@ const KeyStorePage = () => {
                                         <div className="relative">
                                             <input
                                                 type={showPassword ? "text" : "password"}
+                                                required={true}
+                                                autoFocus={true}
                                                 value={password}
-                                                onChange={(e) => setPassword(e.target.value)}
+                                                onChange={handlePasswordChange}
                                                 placeholder="Enter your password"
                                                 className="w-full px-4 py-3 pr-16 outline-gray-400 outline rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs lg:text-sm truncate"
                                             />
@@ -116,11 +156,12 @@ const KeyStorePage = () => {
                                                     onClick={() => setShowPassword(!showPassword)}
                                                     className="text-gray-500 hover:text-gray-700"
                                                 >
-                                                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                                                    {showPassword ? <EyeOff className="w-5 h-5 hover:cursor-pointer" /> : <Eye className="w-5 h-5 hover:cursor-pointer" />}
                                                 </button>
-                                                <X className="w-5 h-5 text-gray-500" />
+                                                <X onClick={() => setPassword("")} className="w-5 h-5 text-gray-400 hover:text-gray-800 hover:cursor-pointer" />
                                             </div>
                                         </div>
+                                        {passwordError.length !== 0 && <p className="text-xs text-red-600 mt-0.5">{passwordError}</p>}
                                     </div>
 
                                     <div className="mt-4">
@@ -128,8 +169,9 @@ const KeyStorePage = () => {
                                         <div className="relative">
                                             <input
                                                 type={showConfirmPassword ? "text" : "password"}
+                                                required={true}
                                                 value={confirmPassword}
-                                                onChange={(e) => setConfirmPassword(e.target.value)}
+                                                onChange={handleConfirmPasswordChange}
                                                 placeholder="Enter your password again"
                                                 className="w-full px-4 py-3 pr-16 outline-gray-400 outline rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs lg:text-sm truncate"
                                             />
@@ -139,29 +181,34 @@ const KeyStorePage = () => {
                                                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                                                     className="text-gray-500 hover:text-gray-700"
                                                 >
-                                                    {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                                                    {showConfirmPassword ? <EyeOff className="w-5 h-5 hover:cursor-pointer" /> : <Eye className="w-5 h-5 hover:cursor-pointer" />}
                                                 </button>
-                                                <X className="w-5 h-5 text-gray-500" />
+                                                <X onClick={() => setConfirmPassword("")} className="w-5 h-5 text-gray-400 hover:text-gray-800 hover:cursor-pointer" />
                                             </div>
                                         </div>
+                                        {confirmPasswordError.length !== 0 && <p className="text-xs text-red-600 mt-0.5">{confirmPasswordError}</p>}
                                     </div>
                                 </div>
 
-                                <div className="flex gap-2 justify-center">
-                                    {/* Back Button */}
-                                    <button
-                                        className="bg-transparent border-green-500 text-green-500 hover:bg-green-100 px-8 py-2 border rounded-lg hover:cursor-pointer text-xs lg:text-sm"
-                                        onClick={handleBack}
-                                    >
-                                        Back
-                                    </button>
-                                    <button
-                                        onClick={handleCreateWallet}
-                                        className={`${!password || !confirmPassword || password !== confirmPassword ? 'bg-gray-300 text-white font-medium hover:cursor-not-allowed' : 'bg-teal-400 hover:bg-teal-500 text-white'} rounded-lg px-8 py-2 text-xs lg:text-sm hover:cursor-pointer`}
-                                    >
-                                        Create Wallet
-                                    </button>
-                                </div>
+                                {isLoading ? (
+                                    <LoadingSpinner />
+                                ) : (
+                                    <div className="flex gap-2 justify-center">
+                                        {/* Back Button */}
+                                        <button
+                                            className="bg-transparent border-green-500 text-green-500 hover:bg-green-100 px-8 py-2 border rounded-lg hover:cursor-pointer text-xs lg:text-sm"
+                                            onClick={handleBack}
+                                        >
+                                            Back
+                                        </button>
+                                        <button
+                                            onClick={handleCreateWallet}
+                                            className={`${!password || !confirmPassword || password !== confirmPassword ? 'bg-gray-300 text-white font-medium hover:cursor-not-allowed' : 'bg-teal-400 hover:bg-teal-500 text-white'} rounded-lg px-8 py-2 text-xs lg:text-sm hover:cursor-pointer`}
+                                        >
+                                            Create Wallet
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         )}
 
@@ -211,17 +258,21 @@ const KeyStorePage = () => {
                                     </div>
                                 </div>
 
-                                <div className="flex gap-4 justify-center">
-                                    <button
-                                        className="bg-transparent border-green-500 text-green-500 hover:bg-green-100 px-8 py-2 border rounded-lg hover:cursor-pointer text-xs lg:text-sm"
-                                        onClick={handleBack}
-                                    >
-                                        Back
-                                    </button>
-                                    <button onClick={handleDownload} className="bg-teal-400 hover:bg-teal-500 text-white rounded-lg px-8 py-2 text-xs lg:text-sm hover:cursor-pointer">
-                                        Acknowledge & Download
-                                    </button>
-                                </div>
+                                {isLoading ? (
+                                    <LoadingSpinner />
+                                ) : (
+                                    <div className="flex gap-4 justify-center">
+                                        <button
+                                            className="bg-transparent border-green-500 text-green-500 hover:bg-green-100 px-8 py-2 border rounded-lg hover:cursor-pointer text-xs lg:text-sm"
+                                            onClick={handleBack}
+                                        >
+                                            Back
+                                        </button>
+                                        <button onClick={handleDownload} className="bg-teal-400 hover:bg-teal-500 text-white rounded-lg px-8 py-2 text-xs lg:text-sm hover:cursor-pointer">
+                                            Acknowledge & Download
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         )}
 
