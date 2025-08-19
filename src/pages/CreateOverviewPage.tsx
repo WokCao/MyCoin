@@ -14,9 +14,9 @@ const CreateOverviewPage = () => {
                         <p className="text-blue-100">Please select a method to create a new wallet</p>
                         <p className="text-sm">
                             Already have a wallet?{" "}
-                            <a href="#" className="text-blue-200 underline hover:text-white transition-colors">
+                            <Link to='/wallet/access' className="text-blue-200 underline hover:text-white transition-colors">
                                 Access Wallet
-                            </a>
+                            </Link>
                         </p>
                     </div>
 

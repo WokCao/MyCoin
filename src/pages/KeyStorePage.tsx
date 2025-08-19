@@ -3,6 +3,8 @@ import { Eye, EyeOff, X, Check, AlertTriangle, Shield, Share, HardDrive, Wallet 
 import Header from "../components/Header"
 import { Link, useNavigate } from "react-router-dom"
 import { LoadingSpinner } from "../components/LoadingSpinner"
+import CryptoJS from "crypto-js"
+import { ec as EC } from "elliptic"
 
 const KeyStorePage = () => {
     const [currentStep, setCurrentStep] = useState(1)
@@ -14,6 +16,7 @@ const KeyStorePage = () => {
     const [confirmPasswordError, setConfirmPasswordError] = useState("")
     const [isLoading, setLoading] = useState(false)
     const navigate = useNavigate()
+    const ec = new EC("secp256k1")
 
     const steps = [
         {
@@ -45,6 +48,28 @@ const KeyStorePage = () => {
 
     const handleDownload = () => {
         setLoading(true);
+        const key = ec.genKeyPair()
+        const privateKey = key.getPrivate("hex")
+        const publicKey = key.getPublic("hex")
+        const address = CryptoJS.SHA256(publicKey).toString().slice(-40)
+
+        const encrypted = CryptoJS.AES.encrypt(privateKey, password).toString()
+        const keystore = {
+            address: address,
+            crypto: {
+                ciphertext: encrypted,
+                algo: "AES",
+            },
+        }
+
+        const blob = new Blob([JSON.stringify(keystore)], { type: "application/json" })
+        const url = URL.createObjectURL(blob)
+        const link = document.createElement("a")
+        link.href = url
+        link.download = `mycoin-keystore-${address}.json`
+        link.click()
+        URL.revokeObjectURL(url)
+
         setTimeout(() => {
             setCurrentStep(3)
             setLoading(false)
@@ -97,9 +122,9 @@ const KeyStorePage = () => {
                         <p className="text-blue-100">Please select a method to create a new wallet</p>
                         <p className="text-sm">
                             Already have a wallet?{" "}
-                            <a href="#" className="text-blue-200 underline hover:text-white transition-colors">
+                            <Link to='/wallet/access' className="text-blue-200 underline hover:text-white transition-colors">
                                 Access Wallet
-                            </a>
+                            </Link>
                         </p>
                     </div>
 
@@ -292,7 +317,7 @@ const KeyStorePage = () => {
 
                                         <div className="space-y-2">
                                             <button className="w-full bg-teal-400 hover:bg-teal-500 rounded-lg py-4 lg:py-2 hover:cursor-pointer text-xs lg:text-base">
-                                                <Link to=''>
+                                                <Link to='/wallet/access' className="text-blue-200 underline hover:text-white transition-colors">
                                                     Access Wallet
                                                 </Link>
                                             </button>

@@ -135,9 +135,9 @@ const MnemonicPage = () => {
                         <p className="text-blue-100">Please select a method to create a new wallet</p>
                         <p className="text-sm">
                             Already have a wallet?{" "}
-                            <a href="#" className="text-blue-200 underline hover:text-white transition-colors">
+                            <Link to='/wallet/access' className="text-blue-200 underline hover:text-white transition-colors">
                                 Access Wallet
-                            </a>
+                            </Link>
                         </p>
                     </div>
 
@@ -222,7 +222,7 @@ const MnemonicPage = () => {
                                             className="flex items-center justify-between w-full text-left text-gray-700 hover:text-gray-900 font-medium"
                                         >
                                             <span className="text-sm lg:text-base">Add Extra Word</span>
-                                            {showExtraWord ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                                            {showExtraWord ? <ChevronUp className="w-5 h-5 hover:cursor-pointer" /> : <ChevronDown className="w-5 h-5 hover:cursor-pointer" />}
                                         </button>
 
                                         {showExtraWord && (
@@ -325,7 +325,7 @@ const MnemonicPage = () => {
                                         </button>
                                         <button
                                             onClick={handleVerify}
-                                            className={`${extraWord.trim().length > 0 && confirmExtraWord.trim().length > 0 ? 'bg-teal-400 hover:bg-teal-500 text-white hover:cursor-pointer' : 'bg-gray-400 hover:bg-gray-500 text-white hover:cursor-not-allowed'} rounded-lg px-8 py-2 text-xs lg:text-sm`}
+                                            className={`${extraWord.trim().length > 0 && confirmExtraWord.trim().length > 0 || extraWord.trim().length === 0 ? 'bg-teal-400 hover:bg-teal-500 text-white hover:cursor-pointer' : 'bg-gray-400 hover:bg-gray-500 text-white hover:cursor-not-allowed'} rounded-lg px-8 py-2 text-xs lg:text-sm`}
                                             disabled={extraWord.trim().length > 0 ? confirmExtraWord.trim().length === 0 : false}
                                         >
                                             Verify
@@ -350,7 +350,7 @@ const MnemonicPage = () => {
 
                                         <div className="space-y-2">
                                             <button className="w-full bg-teal-400 hover:bg-teal-500 rounded-lg py-4 lg:py-2 hover:cursor-pointer text-xs lg:text-base">
-                                                <Link to=''>
+                                                <Link to='/wallet/access' className="text-blue-200 underline hover:text-white transition-colors">
                                                     Access Wallet
                                                 </Link>
                                             </button>
