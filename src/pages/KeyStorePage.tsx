@@ -12,8 +12,8 @@ const KeyStorePage = () => {
     const [showConfirmPassword, setShowConfirmPassword] = useState(false)
     const [passwordError, setPasswordError] = useState("")
     const [confirmPasswordError, setConfirmPasswordError] = useState("")
-    const [isLoading, setLoading] = useState(false);
-    const navigate = useNavigate();
+    const [isLoading, setLoading] = useState(false)
+    const navigate = useNavigate()
 
     const steps = [
         {
@@ -123,7 +123,7 @@ const KeyStorePage = () => {
                                         <div className={step.status === "active" ? "text-white" : "text-blue-700"}>{step.title}</div>
                                     </div>
                                 </div>
-                                {index < steps.length - 1 && <div className="w-12 lg:w-24 h-0.5 bg-gray-300 mx-4 mt-[-20px]" />}
+                                {index < steps.length - 1 && <div className="w-12 lg:w-24 h-0.5 bg-gray-300 mx-2 mt-[-20px]" />}
                             </div>
                         ))}
                     </div>
@@ -286,7 +286,7 @@ const KeyStorePage = () => {
                                 <div className="flex items-center gap-8 mb-8">
                                     <div className="flex-1">
                                         <p className="text-gray-600 mb-6 text-xs">
-                                            You are now ready to take advantage of all that Ethereum has to offer! Access with keystore file
+                                            You are now ready to take advantage of all that MyCoin has to offer! Access with keystore file
                                             should only be used in an offline setting.
                                         </p>
 

@@ -72,9 +72,9 @@ const CreateOverviewPage = () => {
                     </Link>
                 </div>
             </div>
-
+            
             {/* Warning Banner */}
-            <div className="fixed bottom-0 left-0 right-0 bg-yellow-100 border-t border-yellow-200 p-4">
+            <div className="bg-yellow-100 border-t border-yellow-200 p-4">
                 <div className="max-w-4xl mx-auto flex items-start gap-3">
                     <AlertTriangle className="w-5 h-5 text-orange-500 flex-shrink-0 mt-0.5" />
                     <div>
