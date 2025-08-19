@@ -2,8 +2,9 @@ import { AlertTriangle, Check, ChevronDown, ChevronUp, RefreshCw, Wallet } from 
 import { useEffect, useState } from "react";
 import Header from "../components/Header";
 import { Link, useNavigate } from "react-router-dom";
-import * as bip39 from 'bip39';
 import { LoadingSpinner } from "../components/LoadingSpinner";
+import { generateMnemonic, generateWallet } from "../utils/WalletUtils";
+import { useWallet } from "../context/WalletContext";
 
 interface Option {
     text: string;
@@ -26,6 +27,7 @@ const MnemonicPage = () => {
     const [questions, setQuestions] = useState<Question[]>([])
     const [selected, setSelected] = useState<number[]>([0, 0, 0])
     const [optionsError, setOptionsError] = useState("")
+    const { createWallet } = useWallet()
     const navigate = useNavigate()
 
     const steps = [
@@ -55,12 +57,18 @@ const MnemonicPage = () => {
         }
     }
 
-    const handleVerify = () => {
+    const handleVerify = async () => {
         setLoading(true)
         const areAllCorrect = questions.every((q, i) => q.options[selected[i]].isCorrect)
         const isSameExtraWord = extraWord.trim().length > 0 ? extraWord.trim() === confirmExtraWord.trim() : true
+
         if (areAllCorrect && isSameExtraWord) {
             setOptionsError('')
+            const mnemonicFormation = words.join(' ')
+            const wallet = await generateWallet(mnemonicFormation, extraWord);
+            console.log(wallet)
+            createWallet(wallet)
+
             setTimeout(() => {
                 setLoading(false)
                 setCurrentStep(3)
@@ -112,8 +120,7 @@ const MnemonicPage = () => {
     }
 
     const handleGetWords = async () => {
-        const strength = wordCount === 12 ? 128 : 256
-        const data = bip39.generateMnemonic(strength)
+        const data = generateMnemonic(wordCount)
         setWords(data.split(' '))
     }
 
