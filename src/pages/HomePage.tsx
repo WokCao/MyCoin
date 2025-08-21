@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { faucet, getBlock, getPending, getPorfolio, sendCoin } from "../api/AllApis"
+import { faucet, getBlock, getPending, getPorfolio, miningTransaction, sendCoin } from "../api/AllApis"
 import { useWallet } from "../context/WalletContext"
 import { useNavigate } from "react-router-dom"
 import type { BlockI } from "../interface/Block"
@@ -58,7 +58,7 @@ const Homepage = () => {
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const currentValue = Number(e.target.value) || undefined
     setCoinToTransfer(currentValue)
-    if (currentValue && currentValue > noc) {
+    if (currentValue && currentValue > noc || !currentValue) {
       setExceedBalance(true)
     } else {
       setExceedBalance(false)
@@ -69,6 +69,9 @@ const Homepage = () => {
   const handleSendCoin = async () => {
     if (wallet && !exceedBalance && coinToTransfer) {
       await sendCoin(wallet.address, toAddress, coinToTransfer, wallet.privateKey, ec.keyFromPrivate(wallet.privateKey, "hex").getPublic().encode("hex", false))
+      handleGetPorfolio()
+      setToAddress('')
+      setCoinToTransfer(undefined)
     }
   }
 
@@ -77,11 +80,13 @@ const Homepage = () => {
     setBlocks(data)
   }
 
+  /** Get all pending transactions */
   const handleGetPendingTransactions = async () => {
     const data = await getPending()
     setPendingTransactions(data)
   }
 
+  /** Get address from public key */
   const getAddresFromPublicKey = (publicKey: string) => {
     const sha256Hash = CryptoJS.SHA256(publicKey).toString();
     return sha256Hash.slice(-40);
@@ -98,24 +103,21 @@ const Homepage = () => {
     setSelectedTransactions((prev) => (prev.length === allIds.length ? [] : allIds))
   }
 
-  const handleMineSelected = () => {
-    if (selectedTransactions.length > 0) {
-      // Handle mining logic here
-      console.log("Mining transactions:", selectedTransactions)
+  // Mine all the selected transactions
+  const handleMineSelected = async () => {
+    if (selectedTransactions.length > 0 && wallet) {
+      await miningTransaction(wallet.address, selectedTransactions)
+      handleGetPendingTransactions()
+      setSelectedTransactions([])
     }
   }
 
-  const handleValidateSelected = () => {
-    if (selectedTransactions.length > 0) {
-      // Handle validation logic here
-      console.log("Validating transactions:", selectedTransactions)
-    }
-  }
-
+  /** Format time */
   const formatTimestamp = (timestamp: number) => {
     return new Date(timestamp).toLocaleString()
   }
 
+  /** Show less character on address, transaction id,... */
   const truncateHash = (hash: string, length = 8) => {
     return `${hash.slice(0, length)}...${hash.slice(-length)}`
   }
@@ -166,20 +168,6 @@ const Homepage = () => {
       ),
     },
     {
-      id: "history",
-      label: "Transaction Explorer",
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-          />
-        </svg>
-      ),
-    },
-    {
       id: "mining",
       label: "Mining",
       icon: (
@@ -191,6 +179,20 @@ const Homepage = () => {
             d="M6 2l3 3m0 0l-3 3m3-3H4a2 2 0 00-2 2v10a2 2 0 002 2h16a2 2 0 002-2V7a2 2 0 00-2-2h-6m-3-3l3 3m0 0l3-3m-3 3v12"
           />
           <circle cx="12" cy="16" r="2" />
+        </svg>
+      ),
+    },
+    {
+      id: "history",
+      label: "Transaction Explorer",
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+          />
         </svg>
       ),
     }
@@ -225,7 +227,7 @@ const Homepage = () => {
             <div className="grid grid-cols-1 gap-6">
               <div className="bg-white rounded-lg shadow-sm border p-6">
                 <h3 className="text-sm font-medium text-gray-500 mb-2">Wallet Address</h3>
-                <p className="text-lg font-bold text-gray-900">{wallet?.address}</p>
+                <p className="text-lg font-bold text-gray-900 truncate">{wallet?.address}</p>
               </div>
             </div>
           </div>
@@ -297,14 +299,13 @@ const Homepage = () => {
                   />
                   {exceedBalance && (<p className="text-xs text-red-600 my-1">Not enough balance to send</p>)}
                 </div>
-                <button className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors" onClick={handleSendCoin}>
+                <button className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors hover:cursor-pointer" onClick={handleSendCoin}>
                   Send Transaction
                 </button>
               </div>
             </div>
           </div>
         )
-
 
       case "mining":
         return (
@@ -314,21 +315,21 @@ const Homepage = () => {
               <div className="flex gap-3">
                 <button
                   onClick={() => handleSelectAll(pendingTransactions)}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 hover:cursor-pointer"
                 >
                   {selectedTransactions.length === pendingTransactions.length ? "Deselect All" : "Select All"}
                 </button>
-                <button
+                {/* <button
                   onClick={handleValidateSelected}
                   disabled={selectedTransactions.length === 0}
                   className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Validate Selected ({selectedTransactions.length})
-                </button>
+                </button> */}
                 <button
                   onClick={handleMineSelected}
                   disabled={selectedTransactions.length === 0}
-                  className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50 hover:cursor-pointer disabled:cursor-not-allowed"
                 >
                   Mine Selected ({selectedTransactions.length})
                 </button>

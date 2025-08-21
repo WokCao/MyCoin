@@ -3,7 +3,7 @@ import type { BlockI } from "../interface/Block";
 import type { TransactionI } from "../interface/Transaction";
 const BASE_URL = "http://localhost:3000";
 
-export const getPorfolio = async (address: string ): Promise<number> => {
+export const getPorfolio = async (address: string): Promise<number> => {
     try {
         const res = await axios.get(`${BASE_URL}/address/${address}/balance`);
         const balance = res.data.balance || 0;
@@ -59,5 +59,14 @@ export const getPending = async (): Promise<TransactionI[]> => {
     } catch (err) {
         console.error("Failed to get pending transactions", err)
         return []
+    }
+}
+
+export const miningTransaction = async (minerAddress: string, txIds: string[]) => {
+    try {
+        const res = await axios.post(`${BASE_URL}/mineSelected`, { minerAddress, txIds })
+        return res.data
+    } catch (err) {
+        console.error("Failed to mine transactions", err)
     }
 }
