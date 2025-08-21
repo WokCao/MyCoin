@@ -2,6 +2,7 @@ import { Check, Laptop, EyeOff, Eye, X, AlertTriangle } from "lucide-react"
 import { useState, useRef, type JSX } from "react"
 import CryptoJS from "crypto-js";
 import { useWallet } from "../context/WalletContext";
+import { useNavigate } from "react-router-dom";
 
 const AccessKeystore = ({ header }: { header: JSX.Element }) => {
     const [currentStep, setCurrentStep] = useState(1)
@@ -11,6 +12,7 @@ const AccessKeystore = ({ header }: { header: JSX.Element }) => {
     const [file, setFile] = useState<File>()
     const fileInputRef = useRef<HTMLInputElement>(null)
     const { accessWalletFromKeystore } = useWallet()
+    const navigate = useNavigate()
 
     const handleButtonClick = () => {
         fileInputRef.current?.click()
@@ -52,7 +54,7 @@ const AccessKeystore = ({ header }: { header: JSX.Element }) => {
                 }
 
                 accessWalletFromKeystore(decrypted, keystore.address, keystore)
-
+                navigate('/wallet/dashboard')
                 // setPrivateKey(decrypted);
                 // setAddress(keystore.address);
 

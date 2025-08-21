@@ -2,6 +2,7 @@ import { AlertTriangle, ChevronDown, ChevronUp } from "lucide-react";
 import { useState, type JSX } from "react";
 import { accessWalletWithMnemonic } from "../utils/WalletUtils";
 import { useWallet } from "../context/WalletContext";
+import { useNavigate } from "react-router-dom";
 
 const AccessMnemonic = ({ header }: { header: JSX.Element }) => {
     const [wordCount, setWordCount] = useState<12 | 24>(12)
@@ -10,6 +11,7 @@ const AccessMnemonic = ({ header }: { header: JSX.Element }) => {
     const [words, setWords] = useState<string[]>(Array(24).fill(""))
     const [error, setError] = useState("")
     const { accessWallet } = useWallet()
+    const navigate = useNavigate()
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>, i: number) => {
         const value = e.target.value;
@@ -30,6 +32,7 @@ const AccessMnemonic = ({ header }: { header: JSX.Element }) => {
         try {
             const wallet = await accessWalletWithMnemonic(mnemonicFormation, extraWord.trim());
             accessWallet(wallet)
+            navigate('/wallet/dashboard')
           } catch (err) {
             setError("Invalid mnemonic or passphrase");
           }
