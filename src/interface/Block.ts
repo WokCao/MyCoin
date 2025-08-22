@@ -8,4 +8,5 @@ export interface BlockI {
     nonce: number;
     difficulty: number;
     hash: string;
+    minerAddress: string;
 }

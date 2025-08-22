@@ -1,14 +1,10 @@
+import type { TxIn } from "./TxIn";
+import type { TxOut } from "./TxOut";
+
 export interface TransactionI {
     id: string;
-    txIns: {
-        txOutId: string;
-        txOutIndex: number;
-        signature: string;
-    }[];
-    txOuts: {
-        address: string;
-        amount: number;
-    }[];
+    txIns: TxIn[];
+    txOuts: TxOut[];
     publicKey: string;
     timestamp: number;
 }

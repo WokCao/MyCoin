@@ -10,7 +10,7 @@ export const getPorfolio = async (address: string): Promise<number> => {
 
         return balance
     } catch (err) {
-        console.error("Failed to fetch portfolio", err);
+        // console.error("Failed to fetch portfolio", err);
         return 0
     }
 }
@@ -20,7 +20,7 @@ export const faucet = async (address: string, publicKey: string, amount = 50) =>
         const res = await axios.post(`${BASE_URL}/faucet`, { address, amount, publicKey });
         return res.data;
     } catch (err) {
-        console.error("Faucet error:", err);
+        // console.error("Faucet error:", err);
         throw err;
     }
 };
@@ -31,12 +31,12 @@ export const getBlock = async (): Promise<BlockI[]> => {
 
         return res.data
     } catch (err) {
-        console.error("Failed to fetch blocks", err)
+        // console.error("Failed to fetch blocks", err)
         return []
     }
 }
 
-export const sendCoin = async (fromAddress: string, toAddress: string, amount: number, privateKey: string, publicKey: string) => {
+export const sendCoin = async (fromAddress: string, toAddress: string, amount: number, privateKey: string, publicKey: string): Promise<boolean> => {
     try {
         const body = {
             fromAddress,
@@ -45,10 +45,11 @@ export const sendCoin = async (fromAddress: string, toAddress: string, amount: n
             privateKey,
             publicKey
         }
-        const res = await axios.post(`${BASE_URL}/send`, body)
-        return res.data
+        await axios.post(`${BASE_URL}/send`, body)
+        return true
     } catch (err) {
-        console.error("Failed to send coins", err)
+        // console.error("Failed to send coins", err)
+        return false
     }
 }
 
@@ -57,7 +58,7 @@ export const getPending = async (): Promise<TransactionI[]> => {
         const res = await axios.get(`${BASE_URL}/pending`)
         return res.data
     } catch (err) {
-        console.error("Failed to get pending transactions", err)
+        // console.error("Failed to get pending transactions", err)
         return []
     }
 }
@@ -67,6 +68,33 @@ export const miningTransaction = async (minerAddress: string, txIds: string[]) =
         const res = await axios.post(`${BASE_URL}/mineSelected`, { minerAddress, txIds })
         return res.data
     } catch (err) {
-        console.error("Failed to mine transactions", err)
+        // console.error("Failed to mine transactions", err)
+    }
+}
+
+export const getAllUnspent = async (): Promise<number> => {
+    try {
+        const res = await axios.get(`${BASE_URL}/unspent`)
+        return res.data
+    } catch (err) {
+        return 0
+    }
+}
+
+export const getConfirmedTransactions = async (): Promise<number> => {
+    try {
+        const res = await axios.get(`${BASE_URL}/confirmedTransactions`)
+        return res.data
+    } catch (err) {
+        return 0    
+    }
+}
+
+export const getTransactions = async (): Promise<TransactionI[]> => {
+    try {
+        const res = await axios.get(`${BASE_URL}/transactions`)
+        return res.data
+    } catch (err) {
+        return []
     }
 }
