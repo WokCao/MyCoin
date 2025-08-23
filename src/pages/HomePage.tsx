@@ -1,16 +1,27 @@
+import type React from "react"
 import { useEffect, useState } from "react"
-import { faucet, getAllUnspent, getBlock, getConfirmedTransactions, getPending, getPorfolio, getTransactions, miningTransaction, sendCoin } from "../api/AllApis"
+import {
+  faucet,
+  getAllUnspent,
+  getBlock,
+  getConfirmedTransactions,
+  getPending,
+  getPorfolio,
+  getTransactions,
+  miningTransaction,
+  sendCoin,
+} from "../api/AllApis"
 import { useWallet } from "../context/WalletContext"
 import { useNavigate } from "react-router-dom"
 import type { BlockI } from "../interface/Block"
-import { formatDistanceToNow } from 'date-fns'
-import * as elliptic from "elliptic";
-import * as CryptoJS from "crypto-js";
+import { formatDistanceToNow } from "date-fns"
+import * as elliptic from "elliptic"
+import * as CryptoJS from "crypto-js"
 import type { TransactionI } from "../interface/Transaction"
 import type { TxOut } from "../interface/TxOut"
 
-const ec = new elliptic.ec("secp256k1");
-const FOZ_PRICE = 100.12345;
+const ec = new elliptic.ec("secp256k1")
+const FOZ_PRICE = 100.12345
 
 const Homepage = () => {
   const [activeTab, setActiveTab] = useState("portfolio")
@@ -24,7 +35,7 @@ const Homepage = () => {
   /** Number of coin to transfer */
   const [coinToTransfer, setCoinToTransfer] = useState<number>()
   /** Address that will receive the coins */
-  const [toAddress, setToAddress] = useState('')
+  const [toAddress, setToAddress] = useState("")
   /** Check if sending coin is successful */
   const [isSendingCoinSuccessful, setSendingCoinSuccessful] = useState(false)
   /** Total current coins */
@@ -49,7 +60,7 @@ const Homepage = () => {
       const coins = await getPorfolio(wallet.address)
       setNoc(coins)
     } else {
-      navigate('/wallet/access/software?type=overview')
+      navigate("/wallet/access/software?type=overview")
     }
   }
 
@@ -61,7 +72,7 @@ const Homepage = () => {
       handleGetPorfolio()
       setAddingCoin(false)
     } else {
-      navigate('/wallet/access/software?type=overview')
+      navigate("/wallet/access/software?type=overview")
     }
   }
 
@@ -69,7 +80,7 @@ const Homepage = () => {
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const currentValue = Number(e.target.value) || undefined
     setCoinToTransfer(currentValue)
-    if (currentValue && currentValue > noc || !currentValue) {
+    if ((currentValue && currentValue > noc) || !currentValue) {
       setExceedBalance(true)
     } else {
       setExceedBalance(false)
@@ -79,10 +90,16 @@ const Homepage = () => {
   /** Send the coins to a desired address */
   const handleSendCoin = async () => {
     if (wallet && !exceedBalance && coinToTransfer) {
-      const response = await sendCoin(wallet.address, toAddress, coinToTransfer, wallet.privateKey, ec.keyFromPrivate(wallet.privateKey, "hex").getPublic().encode("hex", false))
+      const response = await sendCoin(
+        wallet.address,
+        toAddress,
+        coinToTransfer,
+        wallet.privateKey,
+        ec.keyFromPrivate(wallet.privateKey, "hex").getPublic().encode("hex", false),
+      )
       if (response) {
         handleGetPorfolio()
-        setToAddress('')
+        setToAddress("")
         setCoinToTransfer(0)
         setSendingCoinSuccessful(true)
       } else {
@@ -122,8 +139,8 @@ const Homepage = () => {
 
   /** Get address from public key */
   const getAddresFromPublicKey = (publicKey: string) => {
-    const sha256Hash = CryptoJS.SHA256(publicKey).toString();
-    return sha256Hash.slice(-40);
+    const sha256Hash = CryptoJS.SHA256(publicKey).toString()
+    return sha256Hash.slice(-40)
   }
 
   /** Handle adding transaction when choose one */
@@ -159,21 +176,21 @@ const Homepage = () => {
   }
 
   /** Handle from, to, value */
-  const handleFromToValue = (txOuts: TxOut[], publicKey: string, type: 'from' | 'to' | 'value' = 'from') => {
-    if (type === 'from') {
-      const filterTxOuts = txOuts.filter(txOut => txOut.address === getAddresFromPublicKey(publicKey))
-      if (filterTxOuts.length > 0) { 
+  const handleFromToValue = (txOuts: TxOut[], publicKey: string, type: "from" | "to" | "value" = "from") => {
+    if (type === "from") {
+      const filterTxOuts = txOuts.filter((txOut) => txOut.address === getAddresFromPublicKey(publicKey))
+      if (filterTxOuts.length > 0) {
         return truncateHash(filterTxOuts[0].address, 6)
       }
-    } else if (type === 'to') {
-      const filterTxOuts = txOuts.filter(txOut => txOut.address !== getAddresFromPublicKey(publicKey))
+    } else if (type === "to") {
+      const filterTxOuts = txOuts.filter((txOut) => txOut.address !== getAddresFromPublicKey(publicKey))
       if (filterTxOuts.length > 0) {
-        return truncateHash(filterTxOuts[0].address, 6) 
+        return truncateHash(filterTxOuts[0].address, 6)
       } else {
         return truncateHash(getAddresFromPublicKey(publicKey), 6)
       }
     } else {
-      const filterTxOuts = txOuts.filter(txOut => txOut.address !== getAddresFromPublicKey(publicKey))
+      const filterTxOuts = txOuts.filter((txOut) => txOut.address !== getAddresFromPublicKey(publicKey))
       if (filterTxOuts.length > 0) {
         return filterTxOuts[0].amount
       } else {
@@ -185,23 +202,23 @@ const Homepage = () => {
   /** Handle tab change */
   const handleTabChange = () => {
     switch (activeTab) {
-      case 'portfolio': {
+      case "portfolio": {
         handleGetPorfolio()
         break
       }
-      case 'send': {
+      case "send": {
         handleGetPorfolio()
-        setToAddress('')
+        setToAddress("")
         setCoinToTransfer(undefined)
         setSendingCoinSuccessful(true)
         break
       }
-      case 'mining': {
+      case "mining": {
         handleGetPendingTransactions()
         setSelectedTransactions([])
         break
       }
-      case 'history': {
+      case "history": {
         handleGetUnspent()
         handleGetConfirmedTransactions()
         handleGetBlocks()
@@ -285,39 +302,93 @@ const Homepage = () => {
           />
         </svg>
       ),
-    }
+    },
   ]
 
   const renderContent = () => {
     switch (activeTab) {
       case "portfolio":
         return (
-          <div className="space-y-6">
-            <h1 className="text-lg lg:text-2xl font-bold text-gray-900">Portfolio</h1>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="bg-white rounded-lg shadow-sm border p-6">
-                <h3 className="text-sm font-medium text-gray-500 mb-2">Total Balance</h3>
-                <p className="text-base lg:text-xl font-bold text-gray-900">${(noc * FOZ_PRICE).toFixed(8)}</p>
-              </div>
-
-              <div className="bg-white rounded-lg shadow-sm border p-6">
-                <h3 className="text-sm font-medium text-gray-500 mb-2">FOZ Balance</h3>
-                <p className="text-base lg:text-xl font-bold text-gray-900">{noc.toFixed(8)} FOZ</p>
-                <p className="text-sm text-gray-500 mt-1">= ${(noc * FOZ_PRICE).toFixed(8)}</p>
-              </div>
-
-              <div className="bg-white rounded-lg shadow-sm border p-6">
-                <h3 className="text-sm font-medium text-gray-500 mb-2">BTC Balance</h3>
-                <p className="text-base lg:text-xl font-bold text-gray-900">{(0).toFixed(8)} BTC</p>
-                <p className="text-sm text-gray-500 mt-1">= ${(0 * 120.000).toFixed(8)}</p>
+          <div className="space-y-8">
+            <div className="flex items-center justify-between">
+              <h1 className="text-3xl font-bold text-gray-900">Portfolio Overview</h1>
+              <div className="flex items-center space-x-2 px-4 py-2 bg-green-50 rounded-full">
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                <span className="text-sm font-medium text-green-700">Live</span>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-6">
-              <div className="bg-white rounded-lg shadow-sm border p-6">
-                <h3 className="text-sm font-medium text-gray-500 mb-2">Wallet Address</h3>
-                <p className="text-sm lg:text-base font-bold text-gray-900 truncate">{wallet?.address}</p>
+            {/* Enhanced balance cards with gradients and better styling */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl shadow-sm border border-blue-200 p-6 hover:shadow-md transition-shadow">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="p-3 bg-blue-600 rounded-lg">
+                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"
+                      />
+                    </svg>
+                  </div>
+                  <div className="text-blue-600 text-sm font-medium">USD</div>
+                </div>
+                <h3 className="text-sm font-medium text-blue-700 mb-2">Total Balance</h3>
+                <p className="text-2xl font-bold text-blue-900">${(noc * FOZ_PRICE).toFixed(8)}</p>
+                <p className="text-sm text-blue-600 mt-1">≈ {noc.toFixed(4)} FOZ</p>
+              </div>
+
+              <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-xl shadow-sm border border-emerald-200 p-6 hover:shadow-md transition-shadow">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="p-3 bg-emerald-600 rounded-lg">
+                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M13 10V3L4 14h7v7l9-11h-7z"
+                      />
+                    </svg>
+                  </div>
+                  <div className="text-emerald-600 text-sm font-medium">FOZ</div>
+                </div>
+                <h3 className="text-sm font-medium text-emerald-700 mb-2">FOZ Balance</h3>
+                <p className="text-2xl font-bold text-emerald-900">{noc.toFixed(8)}</p>
+                <p className="text-sm text-emerald-600 mt-1">${(noc * FOZ_PRICE).toFixed(2)} USD</p>
+              </div>
+
+              <div className="bg-gradient-to-br from-amber-50 to-amber-100 rounded-xl shadow-sm border border-amber-200 p-6 hover:shadow-md transition-shadow">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="p-3 bg-amber-600 rounded-lg">
+                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"
+                      />
+                    </svg>
+                  </div>
+                  <div className="text-amber-600 text-sm font-medium">BTC</div>
+                </div>
+                <h3 className="text-sm font-medium text-amber-700 mb-2">BTC Balance</h3>
+                <p className="text-2xl font-bold text-amber-900">{(0).toFixed(8)}</p>
+                <p className="text-sm text-amber-600 mt-1">${(0 * 120.0).toFixed(2)} USD</p>
+              </div>
+            </div>
+
+            {/* Enhanced wallet address card */}
+            <div className="bg-white rounded-xl shadow-sm border p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">Wallet Address</h3>
+                <div className="flex items-center space-x-2">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <span className="text-sm text-gray-600">Active</span>
+                </div>
+              </div>
+              <div className="bg-gray-50 rounded-lg p-4 border">
+                <p className="text-sm font-mono text-gray-900 break-all">{wallet?.address}</p>
               </div>
             </div>
           </div>
@@ -325,29 +396,63 @@ const Homepage = () => {
 
       case "faucet":
         return (
-          <div className="space-y-6">
-            <h1 className="text-3xl font-bold text-gray-900">Faucet</h1>
-            <div className="bg-white rounded-lg shadow-sm border p-6">
-              <h2 className="text-base lg:text-lg font-semibold text-gray-900 mb-4">Get Test Tokens</h2>
-              <p className="text-gray-600 mb-6 text-sm lg:text-base">Request test tokens for development and testing purposes.</p>
-              <button className={`px-6 py-2 text-sm lg:text-base rounded-lg transition-colors ${isAddingCoin ? 'hover:cursor-not-allowed bg-gray-400 text-black' : 'hover:cursor-pointer bg-blue-600 hover:bg-blue-700 text-white'}`} onClick={handleGetCoin} disabled={isAddingCoin}>
-                Request Tokens
-              </button>
+          <div className="space-y-8">
+            <div className="text-center">
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">Test Token Faucet</h1>
+              <p className="text-gray-600">Get free test tokens for development and testing</p>
+            </div>
+
+            <div className="max-w-md mx-auto">
+              <div className="bg-white rounded-xl shadow-sm border p-8 text-center">
+                <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"
+                    />
+                  </svg>
+                </div>
+                <h2 className="text-xl font-semibold text-gray-900 mb-4">Request Test Tokens</h2>
+                <p className="text-gray-600 mb-8">Click the button below to receive test FOZ tokens in your wallet.</p>
+                <button
+                  className={`w-full px-6 py-3 rounded-lg font-medium transition-all ${
+                    isAddingCoin
+                      ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                      : "bg-blue-600 hover:bg-blue-700 text-white shadow-sm hover:shadow-md"
+                  }`}
+                  onClick={handleGetCoin}
+                  disabled={isAddingCoin}
+                >
+                  {isAddingCoin ? (
+                    <div className="flex items-center justify-center space-x-2">
+                      <div className="w-4 h-4 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin"></div>
+                      <span>Processing...</span>
+                    </div>
+                  ) : (
+                    "Request Test Tokens"
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         )
 
       case "send":
         return (
-          <div className="space-y-6">
-            <h1 className="text-3xl font-bold text-gray-900">Send</h1>
+          <div className="space-y-8">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">Send Tokens</h1>
+              <p className="text-gray-600">Transfer FOZ tokens to another wallet address</p>
+            </div>
 
-            <div className="bg-white rounded-lg shadow-sm border p-6">
-              <h2 className="text-base lg:text-lg font-semibold text-gray-900 mb-4">Available Balance</h2>
-              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                <div className="flex items-center space-x-3">
-                  <div className="p-2 bg-blue-600 rounded-full flex items-center justify-center">
-                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            {/* Enhanced balance display */}
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 p-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  <div className="p-3 bg-blue-600 rounded-lg">
+                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path
                         strokeLinecap="round"
                         strokeLinejoin="round"
@@ -357,40 +462,81 @@ const Homepage = () => {
                     </svg>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-gray-500">FOZ Balance</p>
-                    <p className="text-sm lg:text-base font-bold text-gray-900">{noc} FOZ</p>
+                    <p className="text-sm font-medium text-blue-700">Available Balance</p>
+                    <p className="text-2xl font-bold text-blue-900">{noc} FOZ</p>
+                    <p className="text-sm text-blue-600">${(noc * FOZ_PRICE).toFixed(2)} USD</p>
                   </div>
                 </div>
-                <button className="text-blue-600 hover:text-blue-700 text-sm font-medium hover:cursor-pointer" onClick={handleGetPorfolio}>Refresh</button>
+                <button
+                  className="px-4 py-2 text-blue-600 hover:text-blue-700 hover:bg-blue-100 rounded-lg transition-colors font-medium"
+                  onClick={handleGetPorfolio}
+                >
+                  Refresh
+                </button>
               </div>
             </div>
 
-            <div className="bg-white rounded-lg shadow-sm border p-6">
-              <h2 className="text-base lg:text-lg font-semibold text-gray-900 mb-4">Send Tokens</h2>
-              <div className="space-y-4">
+            {/* Enhanced send form */}
+            <div className="bg-white rounded-xl shadow-sm border p-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-6">Transfer Details</h2>
+              <div className="space-y-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Recipient Address</label>
                   <input
                     type="text"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm lg:text-base"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                     value={toAddress}
                     onChange={(e) => setToAddress(e.target.value)}
-                    placeholder={toAddress === '' ? '98abvi...ytz1df' : undefined}
+                    placeholder="Enter wallet address (e.g., 98abvi...ytz1df)"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Amount</label>
-                  <input
-                    type="number"
-                    className={`w-full px-3 py-2 border ${exceedBalance ? 'border-red-700' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm lg:text-base`}
-                    value={coinToTransfer}
-                    onChange={handleAmountChange}
-                    placeholder={!coinToTransfer ? '0' : undefined}
-                  />
-                  {exceedBalance && (<p className="text-xs text-red-600 my-1">Not enough balance to send</p>)}
-                  {!isSendingCoinSuccessful && (<p className="text-xs text-red-600 my-1">Failed to send coin. Please try again (Maybe the wallet doesn't have enough UTXO to process,...)</p>)}
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Amount (FOZ)</label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      className={`w-full px-4 py-3 border ${exceedBalance ? "border-red-300 focus:ring-red-500" : "border-gray-300 focus:ring-blue-500"} rounded-lg focus:outline-none focus:ring-2 focus:border-transparent transition-colors`}
+                      value={coinToTransfer || ""}
+                      onChange={handleAmountChange}
+                      placeholder="0.00"
+                      step="0.00000001"
+                    />
+                    <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+                      <span className="text-gray-500 text-sm">FOZ</span>
+                    </div>
+                  </div>
+                  {exceedBalance && (
+                    <div className="mt-2 flex items-center space-x-2 text-red-600">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                      </svg>
+                      <p className="text-sm">Insufficient balance for this transaction</p>
+                    </div>
+                  )}
+                  {!isSendingCoinSuccessful && (
+                    <div className="mt-2 flex items-center space-x-2 text-red-600">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                      </svg>
+                      <p className="text-sm">Transaction failed. Please check your balance and try again.</p>
+                    </div>
+                  )}
                 </div>
-                <button className="bg-blue-600 text-white px-6 py-2 text-sm lg:text-base rounded-lg hover:bg-blue-700 transition-colors hover:cursor-pointer" onClick={handleSendCoin}>
+                <button
+                  className="w-full bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={handleSendCoin}
+                  disabled={!toAddress || !coinToTransfer || exceedBalance}
+                >
                   Send Transaction
                 </button>
               </div>
@@ -400,20 +546,23 @@ const Homepage = () => {
 
       case "mining":
         return (
-          <div className="space-y-6">
+          <div className="space-y-8">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg lg:text-2xl font-bold text-gray-900">Mining Pool</h2>
-              <div className="flex gap-3">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900 mb-2">Mining Pool</h1>
+                <p className="text-gray-600">Select and mine pending transactions</p>
+              </div>
+              <div className="flex items-center space-x-3">
                 <button
                   onClick={() => handleSelectAll(pendingTransactions)}
-                  className="px-2 lg:px-4 py-2 text-xs lg:text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 hover:cursor-pointer"
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
                 >
                   {selectedTransactions.length === pendingTransactions.length ? "Deselect All" : "Select All"}
                 </button>
                 <button
                   onClick={handleMineSelected}
                   disabled={selectedTransactions.length === 0}
-                  className="px-2 lg:px-4 py-2 text-xs lg:text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50 hover:cursor-pointer disabled:cursor-not-allowed"
+                  className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
                 >
                   Mine Selected ({selectedTransactions.length})
                 </button>
@@ -421,45 +570,47 @@ const Homepage = () => {
             </div>
 
             {pendingTransactions.length === 0 ? (
-              <div className="text-center py-12">
-                <div className="w-16 h-16 mx-auto mb-4 text-gray-400">
+              <div className="text-center py-16">
+                <div className="w-20 h-20 mx-auto mb-6 text-gray-300">
                   <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
-                      strokeWidth={2}
+                      strokeWidth={1.5}
                       d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                     />
                   </svg>
                 </div>
-                <h3 className="text-sm lg:text-lg font-medium text-gray-900 mb-2">No Transactions Available</h3>
-                <p className="text-gray-500 text-xs lg:text-base">Transactions will appear here when they're ready for mining.</p>
+                <h3 className="text-xl font-medium text-gray-900 mb-2">No Pending Transactions</h3>
+                <p className="text-gray-500 max-w-md mx-auto">
+                  Transactions will appear here when they're ready for mining. Check back later or refresh the page.
+                </p>
               </div>
             ) : (
-              <div className="bg-white rounded-lg shadow overflow-hidden">
+              <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                       <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Select
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Transaction ID
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           From
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           To
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Amount
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Timestamp
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Public Key
                         </th>
                       </tr>
@@ -468,39 +619,54 @@ const Homepage = () => {
                       {pendingTransactions.map((transaction) => (
                         <tr
                           key={transaction.id}
-                          className={`hover:bg-gray-50 ${selectedTransactions.includes(transaction.id) ? "bg-blue-50" : ""}`}
+                          className={`hover:bg-gray-50 transition-colors ${selectedTransactions.includes(transaction.id) ? "bg-blue-50 border-l-4 border-blue-500" : ""}`}
                         >
                           <td className="px-6 py-4 whitespace-nowrap">
                             <input
                               type="checkbox"
                               checked={selectedTransactions.includes(transaction.id)}
                               onChange={() => handleTransactionSelect(transaction.id)}
-                              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded hover:cursor-pointer"
+                              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                             />
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm font-mono text-gray-900">{truncateHash(transaction.id)}</div>
+                            <div className="text-sm font-mono text-blue-600">{truncateHash(transaction.id)}</div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm text-gray-900">
-                              {truncateHash(transaction.txOuts.filter(txOut => txOut.address === getAddresFromPublicKey(transaction.publicKey))[0].address, 6)}
+                            <div className="text-sm text-gray-900 font-mono">
+                              {truncateHash(
+                                transaction.txOuts.filter(
+                                  (txOut) => txOut.address === getAddresFromPublicKey(transaction.publicKey),
+                                )[0].address,
+                                6,
+                              )}
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm text-gray-900">
-                              {truncateHash(transaction.txOuts.filter(txOut => txOut.address !== getAddresFromPublicKey(transaction.publicKey))[0].address, 6)}
+                            <div className="text-sm text-gray-900 font-mono">
+                              {truncateHash(
+                                transaction.txOuts.filter(
+                                  (txOut) => txOut.address !== getAddresFromPublicKey(transaction.publicKey),
+                                )[0].address,
+                                6,
+                              )}
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="text-sm font-medium text-gray-900">
-                              {(transaction.txOuts.filter(txOut => txOut.address !== getAddresFromPublicKey(transaction.publicKey))[0].amount).toFixed(8)} FOZ
+                              {transaction.txOuts
+                                .filter((txOut) => txOut.address !== getAddresFromPublicKey(transaction.publicKey))[0]
+                                .amount.toFixed(8)}{" "}
+                              FOZ
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm text-gray-900">{formatTimestamp(transaction.timestamp)}</div>
+                            <div className="text-sm text-gray-500">{formatTimestamp(transaction.timestamp)}</div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm font-mono text-gray-500">{truncateHash(transaction.publicKey, 6)}</div>
+                            <div className="text-sm font-mono text-gray-500">
+                              {truncateHash(transaction.publicKey, 6)}
+                            </div>
                           </td>
                         </tr>
                       ))}
@@ -514,15 +680,18 @@ const Homepage = () => {
 
       case "history":
         return (
-          <div className="space-y-6">
-            <h1 className="text-lg lg:text-2xl font-bold text-gray-900">Transaction Explorer</h1>
+          <div className="space-y-8">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">Transaction Explorer</h1>
+              <p className="text-gray-600">Real-time blockchain data and transaction history</p>
+            </div>
 
-            {/* Top Metrics Section */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <div className="bg-white rounded-lg shadow-sm border p-6">
-                <div className="flex items-center space-x-3">
-                  <div className="p-1 bg-blue-100 rounded-lg flex items-center justify-center">
-                    <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            {/* Enhanced metrics section */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl shadow-sm border border-blue-200 p-6">
+                <div className="flex items-center space-x-4">
+                  <div className="p-3 bg-blue-600 rounded-lg">
+                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path
                         strokeLinecap="round"
                         strokeLinejoin="round"
@@ -532,16 +701,17 @@ const Homepage = () => {
                     </svg>
                   </div>
                   <div>
-                    <p className="text-xs text-gray-500 uppercase tracking-wide">FOZ PRICE</p>
-                    <p className="text-base lg:text-lg font-bold text-gray-900">${FOZ_PRICE}</p>
+                    <p className="text-xs text-blue-700 uppercase tracking-wide font-medium">FOZ PRICE</p>
+                    <p className="text-2xl font-bold text-blue-900">${FOZ_PRICE}</p>
+                    <p className="text-sm text-blue-600">Live Price</p>
                   </div>
                 </div>
               </div>
 
-              <div className="bg-white rounded-lg shadow-sm border p-6">
-                <div className="flex items-center space-x-3">
-                  <div className="p-1 bg-green-100 rounded-lg flex items-center justify-center">
-                    <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-xl shadow-sm border border-emerald-200 p-6">
+                <div className="flex items-center space-x-4">
+                  <div className="p-3 bg-emerald-600 rounded-lg">
+                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path
                         strokeLinecap="round"
                         strokeLinejoin="round"
@@ -551,16 +721,17 @@ const Homepage = () => {
                     </svg>
                   </div>
                   <div>
-                    <p className="text-xs text-gray-500 uppercase tracking-wide">MARKET CAP</p>
-                    <p className="text-base lg:text-lg font-bold text-gray-900">${marketCoin * FOZ_PRICE}</p>
+                    <p className="text-xs text-emerald-700 uppercase tracking-wide font-medium">MARKET CAP</p>
+                    <p className="text-2xl font-bold text-emerald-900">${(marketCoin * FOZ_PRICE).toLocaleString()}</p>
+                    <p className="text-sm text-emerald-600">Total Value</p>
                   </div>
                 </div>
               </div>
 
-              <div className="bg-white rounded-lg shadow-sm border p-6">
-                <div className="flex items-center space-x-3">
-                  <div className="p-1 bg-purple-100 rounded-lg flex items-center justify-center">
-                    <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl shadow-sm border border-purple-200 p-6">
+                <div className="flex items-center space-x-4">
+                  <div className="p-3 bg-purple-600 rounded-lg">
+                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path
                         strokeLinecap="round"
                         strokeLinejoin="round"
@@ -570,65 +741,37 @@ const Homepage = () => {
                     </svg>
                   </div>
                   <div>
-                    <p className="text-xs text-gray-500 uppercase tracking-wide">TRANSACTIONS</p>
-                    <p className="text-base lg:text-lg font-bold text-gray-900">{numberOfTransaction}</p>
+                    <p className="text-xs text-purple-700 uppercase tracking-wide font-medium">TRANSACTIONS</p>
+                    <p className="text-2xl font-bold text-purple-900">{numberOfTransaction.toLocaleString()}</p>
+                    <p className="text-sm text-purple-600">Total Count</p>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Chart Section */}
-            {/* <div className="bg-white rounded-lg shadow-sm border p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-lg font-semibold text-gray-900">Transaction History in 14 Days</h2>
-                <div className="text-sm text-gray-500">$500k - $600k</div>
-              </div>
-              <div className="h-64 flex items-end justify-between space-x-1">
-
-                <div className="flex-1 bg-gray-100 rounded-t relative overflow-hidden">
-                  <svg className="w-1/5 h-1/5" viewBox="0 0 400 200" preserveAspectRatio="none">
-                    <polyline
-                      fill="none"
-                      stroke="#3B82F6"
-                      strokeWidth="2"
-                      points="0,150 50,120 100,140 150,100 200,110 250,90 300,120 350,100 400,80"
-                    />
-                    <defs>
-                      <linearGradient id="gradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                        <stop offset="0%" stopColor="#3B82F6" stopOpacity="0.3" />
-                        <stop offset="100%" stopColor="#3B82F6" stopOpacity="0.1" />
-                      </linearGradient>
-                    </defs>
-                    <polygon
-                      fill="url(#gradient)"
-                      points="0,150 50,120 100,140 150,100 200,110 250,90 300,120 350,100 400,80 400,200 0,200"
-                    />
-                  </svg>
-                </div>
-              </div>
-              <div className="flex justify-between text-xs text-gray-500 mt-2">
-                <span>Aug 5</span>
-                <span>Aug 12</span>
-                <span>Aug 19</span>
-              </div>
-            </div> */}
-
-            {/* Latest Blocks and Transactions */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Enhanced blocks and transactions section */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {/* Latest Blocks */}
-              <div className="bg-white rounded-lg shadow-sm border">
-                <div className="p-6 border-b flex items-center justify-between">
-                  <h2 className="text-lg font-semibold text-gray-900">Latest Blocks</h2>
-                  <button className="text-blue-600 hover:text-blue-700 text-sm font-medium hover:cursor-not-allowed">🔧 Customize</button>
+              <div className="bg-white rounded-xl shadow-sm border">
+                <div className="p-6 border-b border-gray-100">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-xl font-semibold text-gray-900">Latest Blocks</h2>
+                    <button className="text-blue-600 hover:text-blue-700 text-sm font-medium hover:bg-blue-50 px-3 py-1 rounded-lg transition-colors">
+                      View All
+                    </button>
+                  </div>
                 </div>
                 <div className="p-6">
                   <div className="space-y-4">
                     {blocks.map((block, index) => (
-                      <div key={index} className="flex items-center justify-between py-2">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-8 h-8 bg-gray-100 rounded flex items-center justify-center">
+                      <div
+                        key={index}
+                        className="flex items-center justify-between p-4 hover:bg-gray-50 rounded-lg transition-colors"
+                      >
+                        <div className="flex items-center space-x-4">
+                          <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
                             <svg
-                              className="w-4 h-4 text-gray-600"
+                              className="w-5 h-5 text-blue-600"
                               fill="none"
                               stroke="currentColor"
                               viewBox="0 0 24 24"
@@ -642,42 +785,48 @@ const Homepage = () => {
                             </svg>
                           </div>
                           <div>
-                            <p className="text-blue-600 font-medium text-sm">Block #{block.index}</p>
-                            <p className="text-xs text-gray-500">{formatDistanceToNow(new Date(block.timestamp))}</p>
+                            <p className="font-medium text-gray-900">Block #{block.index}</p>
+                            <p className="text-sm text-gray-500">
+                              {formatDistanceToNow(new Date(block.timestamp))} ago
+                            </p>
                           </div>
                         </div>
                         <div className="text-right">
-                          <p className="text-xs text-gray-900">
-                            <span className="text-blue-600">{block.index !== 0 ? truncateHash(block.minerAddress, 4) : 'Genesis block'}</span>
+                          <p className="text-sm font-medium text-gray-900">
+                            {block.index !== 0 ? truncateHash(block.minerAddress, 4) : "Genesis"}
                           </p>
-                          <p className="text-xs text-gray-500">{block.transactions.length} transactions</p>
+                          <p className="text-sm text-gray-500">{block.transactions.length} txns</p>
                         </div>
-                        <div className={`text-right border p-1 rounded-lg border-gray-300`}>
-                          <p className="text-sm font-medium text-gray-900" title="Mining reward">{(block.index !== 0 ? 0.01 : '0.00') + ' FoZ'}</p>
+                        <div className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
+                          {(block.index !== 0 ? 0.01 : 0).toFixed(2)} FOZ
                         </div>
                       </div>
                     ))}
-                  </div>
-                  <div className="mt-4 text-center">
-                    <button className="text-blue-600 hover:text-blue-700 text-sm font-medium">VIEW ALL BLOCKS →</button>
                   </div>
                 </div>
               </div>
 
               {/* Latest Transactions */}
-              <div className="bg-white rounded-lg shadow-sm border">
-                <div className="p-6 border-b flex items-center justify-between">
-                  <h2 className="text-lg font-semibold text-gray-900">Latest Transactions</h2>
-                  <button className="text-blue-600 hover:text-blue-700 text-sm font-medium">🔧 Customize</button>
+              <div className="bg-white rounded-xl shadow-sm border">
+                <div className="p-6 border-b border-gray-100">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-xl font-semibold text-gray-900">Latest Transactions</h2>
+                    <button className="text-blue-600 hover:text-blue-700 text-sm font-medium hover:bg-blue-50 px-3 py-1 rounded-lg transition-colors">
+                      View All
+                    </button>
+                  </div>
                 </div>
                 <div className="p-6">
                   <div className="space-y-4">
                     {confirmedTransactions.map((tx, index) => (
-                      <div key={index} className="flex items-center justify-between py-2">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-8 h-8 bg-gray-100 rounded flex items-center justify-center">
+                      <div
+                        key={index}
+                        className="flex items-center justify-between p-4 hover:bg-gray-50 rounded-lg transition-colors"
+                      >
+                        <div className="flex items-center space-x-4">
+                          <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center">
                             <svg
-                              className="w-4 h-4 text-gray-600"
+                              className="w-5 h-5 text-emerald-600"
                               fill="none"
                               stroke="currentColor"
                               viewBox="0 0 24 24"
@@ -691,28 +840,25 @@ const Homepage = () => {
                             </svg>
                           </div>
                           <div>
-                            <p className="text-blue-600 font-medium text-sm">{truncateHash(tx.id, 3)}</p>
-                            <p className="text-xs text-gray-500">{formatDistanceToNow(new Date(tx.timestamp))}</p>
+                            <p className="font-medium text-gray-900 font-mono text-sm">{truncateHash(tx.id, 4)}</p>
+                            <p className="text-sm text-gray-500">{formatDistanceToNow(new Date(tx.timestamp))} ago</p>
                           </div>
                         </div>
-                        <div className="text-right mx-4">
-                          <p className="text-xs text-gray-500">
-                            From <span className="text-blue-600">{handleFromToValue(tx.txOuts, tx.publicKey, 'from')}</span>
+                        <div className="text-center">
+                          <p className="text-sm text-gray-500">
+                            <span className="font-mono">{handleFromToValue(tx.txOuts, tx.publicKey, "from")}</span>
                           </p>
-                          <p className="text-xs text-gray-500">
-                            To <span className="text-blue-600">{handleFromToValue(tx.txOuts, tx.publicKey, 'to')}</span>
+                          <p className="text-sm text-gray-500">
+                            → <span className="font-mono">{handleFromToValue(tx.txOuts, tx.publicKey, "to")}</span>
                           </p>
                         </div>
                         <div className="text-right">
-                          <p className="text-sm font-medium text-gray-900">{Number(handleFromToValue(tx.txOuts, tx.publicKey, 'value')).toFixed(4)} FoZ</p>
+                          <p className="font-medium text-gray-900">
+                            {Number(handleFromToValue(tx.txOuts, tx.publicKey, "value")).toFixed(4)} FOZ
+                          </p>
                         </div>
                       </div>
                     ))}
-                  </div>
-                  <div className="mt-4 text-center">
-                    <button className="text-blue-600 hover:text-blue-700 text-sm font-medium">
-                      VIEW ALL TRANSACTIONS →
-                    </button>
                   </div>
                 </div>
               </div>
@@ -727,21 +873,20 @@ const Homepage = () => {
 
   return (
     <div className="flex h-screen bg-gray-50 relative">
-      {/* Backdrop */}
+      {/* Enhanced backdrop */}
       {sidebarOpen && (
-        <div className="fixed inset-0 bg-black/40 bg-opacity-50 z-40" onClick={() => setSidebarOpen(false)} />
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40" onClick={() => setSidebarOpen(false)} />
       )}
 
-      {/* Sidebar */}
+      {/* Enhanced Sidebar */}
       <div
-        className={`fixed left-0 top-0 h-full w-64 bg-white shadow-lg border-r z-50 transform transition-transform duration-300 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"
-          }`}
+        className={`fixed left-0 top-0 h-full w-64 bg-white shadow-xl border-r z-50 transform transition-transform duration-300 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}
       >
-        <div className="p-6">
+        <div className="p-6 border-b border-gray-100">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
-                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl flex items-center justify-center shadow-sm">
+                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -754,7 +899,7 @@ const Homepage = () => {
             </div>
             <button
               onClick={() => setSidebarOpen(false)}
-              className="p-1 rounded-lg hover:bg-gray-100 transition-colors hover:cursor-pointer"
+              className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
             >
               <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -763,16 +908,17 @@ const Homepage = () => {
           </div>
         </div>
 
-        <nav className="px-4 pb-4">
+        <nav className="px-4 py-6">
           <ul className="space-y-2">
             {menuItems.map((item) => (
               <li key={item.id}>
                 <button
                   onClick={() => setActiveTab(item.id)}
-                  className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left transition-colors hover:cursor-pointer ${activeTab === item.id
-                    ? "bg-blue-50 text-blue-700 border border-blue-200"
-                    : "text-gray-700 hover:bg-gray-50"
-                    }`}
+                  className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-left transition-all ${
+                    activeTab === item.id
+                      ? "bg-blue-50 text-blue-700 border border-blue-200 shadow-sm"
+                      : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+                  }`}
                 >
                   {item.icon}
                   <span className="font-medium">{item.label}</span>
@@ -782,8 +928,8 @@ const Homepage = () => {
           </ul>
         </nav>
 
-        <div className="absolute bottom-4 left-4 right-4">
-          <button className="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left text-red-600 hover:bg-red-50 transition-colors hover:cursor-pointer">
+        <div className="absolute bottom-6 left-4 right-4">
+          <button className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-left text-red-600 hover:bg-red-50 transition-colors">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
@@ -797,20 +943,24 @@ const Homepage = () => {
         </div>
       </div>
 
-      {/* Main Content */}
+      {/* Enhanced Main Content */}
       <div className="flex-1 w-full overflow-auto">
-        <div className="bg-white border-b px-8 py-4 flex items-center justify-between">
-          <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="p-2 rounded-lg hover:bg-gray-100 transition-colors hover:cursor-pointer"
-          >
-            <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
-          </button>
-          <div className="flex items-center space-x-2">
-            <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-            <span className="text-sm text-gray-600">Connected</span>
+        <div className="bg-white border-b border-gray-200 px-8 py-4">
+          <div className="flex items-center justify-between">
+            <button
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+            >
+              <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+            <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-2 px-3 py-1 bg-green-50 rounded-full">
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                <span className="text-sm font-medium text-green-700">Connected</span>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -820,4 +970,4 @@ const Homepage = () => {
   )
 }
 
-export default Homepage;
+export default Homepage
