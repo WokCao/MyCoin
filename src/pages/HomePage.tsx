@@ -19,6 +19,9 @@ import * as elliptic from "elliptic"
 import * as CryptoJS from "crypto-js"
 import type { TransactionI } from "../interface/Transaction"
 import type { TxOut } from "../interface/TxOut"
+import type { TransactionPagI } from "../interface/TransactionPag"
+import type { ChainPagI } from "../interface/ChainPag"
+import { ChevronLeft, ChevronRight } from "lucide-react"
 
 const ec = new elliptic.ec("secp256k1")
 const FOZ_PRICE = 100.12345
@@ -50,6 +53,18 @@ const Homepage = () => {
   const [pendingTransactions, setPendingTransactions] = useState<TransactionI[]>([])
   /** Confirmed transactions */
   const [confirmedTransactions, setConfirmedTransactions] = useState<TransactionI[]>([])
+  /** Search query for transaction explorer */
+  const [searchQuery, setSearchQuery] = useState("")
+  /** Search filter type for transaction explorer */
+  const [searchFilter, setSearchFilter] = useState("all")
+  /** Current page of chain */
+  const [currentPageChain, setCurrentPageChain] = useState(1)
+  /** Total page of chain */
+  const [totalPageChain, setTotalPageChain] = useState(1)
+  /** Current page of transactions */
+  const [currentPageTransactions, setCurrentPageTransactions] = useState(1)
+  /** Total page of transactions */
+  const [totalPageTransactions, setTotalPageTransactions] = useState(1)
 
   const { wallet } = useWallet()
   const navigate = useNavigate()
@@ -121,14 +136,17 @@ const Homepage = () => {
 
   /** Get all current blocks */
   const handleGetBlocks = async () => {
-    const data = await getBlock()
-    setBlocks(data)
+    const data: ChainPagI = await getBlock({ page: currentPageChain })
+    setBlocks(data.blocks)
+    setTotalPageChain(data.totalPages)
   }
 
   /** Get transactions */
   const handleGetTransactions = async () => {
-    const data = await getTransactions()
-    setConfirmedTransactions(data)
+    const data: TransactionPagI = await getTransactions({ page: currentPageTransactions })
+    console.log(data)
+    setConfirmedTransactions(data.transactions)
+    setTotalPageTransactions(data.totalPages)
   }
 
   /** Get all pending transactions */
@@ -181,7 +199,7 @@ const Homepage = () => {
       const filterTxOuts = txOuts.filter((txOut) => txOut.address === getAddresFromPublicKey(publicKey))
       if (filterTxOuts.length > 0) {
         return truncateHash(filterTxOuts[0].address, 6)
-      }
+      } else return 'System'
     } else if (type === "to") {
       const filterTxOuts = txOuts.filter((txOut) => txOut.address !== getAddresFromPublicKey(publicKey))
       if (filterTxOuts.length > 0) {
@@ -235,6 +253,14 @@ const Homepage = () => {
     setSidebarOpen(!sidebarOpen)
     handleTabChange()
   }, [activeTab])
+
+  useEffect(() => {
+    handleGetBlocks()
+  }, [currentPageChain])
+
+  useEffect(() => {
+    handleGetTransactions()
+  }, [currentPageTransactions])
 
   const menuItems = [
     {
@@ -417,11 +443,10 @@ const Homepage = () => {
                 <h2 className="text-xl font-semibold text-gray-900 mb-4">Request Test Tokens</h2>
                 <p className="text-gray-600 mb-8">Click the button below to receive test FOZ tokens in your wallet.</p>
                 <button
-                  className={`w-full px-6 py-3 rounded-lg font-medium transition-all ${
-                    isAddingCoin
-                      ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                      : "bg-blue-600 hover:bg-blue-700 text-white shadow-sm hover:shadow-md"
-                  }`}
+                  className={`w-full px-6 py-3 rounded-lg font-medium transition-all ${isAddingCoin
+                    ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                    : "bg-blue-600 hover:bg-blue-700 text-white shadow-sm hover:shadow-md"
+                    }`}
                   onClick={handleGetCoin}
                   disabled={isAddingCoin}
                 >
@@ -686,6 +711,52 @@ const Homepage = () => {
               <p className="text-gray-600">Real-time blockchain data and transaction history</p>
             </div>
 
+            {/* Enhanced search bar with filter dropdown */}
+            <div className="bg-white rounded-xl shadow-sm border p-6">
+              <div className="flex items-center space-x-4">
+                <div className="relative">
+                  <select
+                    value={searchFilter}
+                    onChange={(e) => setSearchFilter(e.target.value)}
+                    className="appearance-none bg-gray-50 border border-gray-300 rounded-lg px-4 py-3 pr-10 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                  >
+                    <option value="all">All Filters</option>
+                    <option value="address">Address</option>
+                    <option value="txn">Txn Hash</option>
+                    <option value="block">Block</option>
+                  </select>
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </div>
+                <div className="flex-1 relative">
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search by Address / Txn Hash / Block"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                    onKeyDown={(e) => e.key === "Enter"}
+                  />
+                </div>
+                <button
+                  onClick={() => { }}
+                  className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors shadow-sm"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                    />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
             {/* Enhanced metrics section */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl shadow-sm border border-blue-200 p-6">
@@ -756,19 +827,16 @@ const Homepage = () => {
                 <div className="p-6 border-b border-gray-100">
                   <div className="flex items-center justify-between">
                     <h2 className="text-xl font-semibold text-gray-900">Latest Blocks</h2>
-                    <button className="text-blue-600 hover:text-blue-700 text-sm font-medium hover:bg-blue-50 px-3 py-1 rounded-lg transition-colors">
-                      View All
-                    </button>
                   </div>
                 </div>
-                <div className="p-6">
+                <div className="p-3">
                   <div className="space-y-4">
                     {blocks.map((block, index) => (
                       <div
                         key={index}
                         className="flex items-center justify-between p-4 hover:bg-gray-50 rounded-lg transition-colors"
                       >
-                        <div className="flex items-center space-x-4">
+                        <div className="flex items-center space-x-4 w-1/2 lg:w-1/3">
                           <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
                             <svg
                               className="w-5 h-5 text-blue-600"
@@ -780,7 +848,7 @@ const Homepage = () => {
                                 strokeLinecap="round"
                                 strokeLinejoin="round"
                                 strokeWidth={2}
-                                d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+                                d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 00-2 2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
                               />
                             </svg>
                           </div>
@@ -792,17 +860,125 @@ const Homepage = () => {
                           </div>
                         </div>
                         <div className="text-right">
-                          <p className="text-sm font-medium text-gray-900">
+                          <p className="text-xs lg:text-sm font-mono text-gray-900">
                             {block.index !== 0 ? truncateHash(block.minerAddress, 4) : "Genesis"}
                           </p>
-                          <p className="text-sm text-gray-500">{block.transactions.length} txns</p>
+                          <p className="text-xs lg:text-sm text-gray-500">{block.transactions.length} txns</p>
                         </div>
-                        <div className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
-                          {(block.index !== 0 ? 0.01 : 0).toFixed(2)} FOZ
+                        <div className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs lg:text-sm font-medium">
+                          {((block.index !== 0 && block.transactions[0]?.txIns?.length > 0) ? 0.01 : 0).toFixed(2)} FOZ
                         </div>
                       </div>
                     ))}
                   </div>
+                  {totalPageChain > 1 && (
+                    <div className="flex items-center justify-between mt-6 pt-6 border-t border-gray-100">
+                      <div className="text-sm text-gray-500">
+                        Page {currentPageChain} of {totalPageChain}
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <button
+                          onClick={() => setCurrentPageChain(Math.max(1, currentPageChain - 1))}
+                          disabled={currentPageChain === 1}
+                          className="p-1 font-medium text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                          <ChevronLeft className="h-4 w-4" />
+                        </button>
+                        <div className="flex items-center space-x-1">
+                          {totalPageChain <= 5
+                            ?
+                            Array.from({ length: totalPageChain }, (_, i) => {
+                              const pageNum = i + 1
+                              return (
+                                <button
+                                  key={pageNum}
+                                  onClick={() => setCurrentPageChain(pageNum)}
+                                  className={`px-3 py-2 text-xs lg:text-sm font-medium rounded-lg transition-colors ${currentPageChain === pageNum ? "bg-blue-600 text-white" : "text-gray-500 hover:bg-gray-50"
+                                    }`}
+                                >
+                                  {pageNum}
+                                </button>
+                              )
+                            })
+                            : // Show first, middle 3, and last pages when more than 5
+                            (() => {
+                              const pages = []
+                              const startMiddle = Math.max(2, Math.min(currentPageChain - 1, totalPageChain - 3))
+                              const endMiddle = Math.min(totalPageChain - 1, startMiddle + 2)
+
+                              // First page
+                              pages.push(
+                                <button
+                                  key={1}
+                                  onClick={() => setCurrentPageChain(1)}
+                                  className={`px-3 py-2 text-xs lg:text-sm font-medium rounded-lg transition-colors ${currentPageChain === 1 ? "bg-blue-600 text-white" : "text-gray-500 hover:bg-gray-50"
+                                    }`}
+                                >
+                                  1
+                                </button>,
+                              )
+
+                              // Ellipsis
+                              if (startMiddle > 2) {
+                                pages.push(
+                                  <span key="ellipsis1" className="px-2 text-gray-400">
+                                    ...
+                                  </span>,
+                                )
+                              }
+
+                              // Middle pages
+                              for (let i = startMiddle; i <= endMiddle; i++) {
+                                pages.push(
+                                  <button
+                                    key={i}
+                                    onClick={() => setCurrentPageChain(i)}
+                                    className={`px-3 py-2 text-xs lg:text-sm font-medium rounded-lg transition-colors ${currentPageChain === i ? "bg-blue-600 text-white" : "text-gray-500 hover:bg-gray-50"
+                                      }`}
+                                  >
+                                    {i}
+                                  </button>,
+                                )
+                              }
+
+                              // Ellipsis
+                              if (endMiddle < totalPageChain - 1) {
+                                pages.push(
+                                  <span key="ellipsis2" className="px-2 text-gray-400">
+                                    ...
+                                  </span>,
+                                )
+                              }
+
+                              // Last page
+                              if (totalPageChain > 1) {
+                                pages.push(
+                                  <button
+                                    key={totalPageChain}
+                                    onClick={() => setCurrentPageChain(totalPageChain)}
+                                    className={`px-3 py-2 text-xs lg:text-sm font-medium rounded-lg transition-colors ${currentPageChain === totalPageChain
+                                      ? "bg-blue-600 text-white"
+                                      : "text-gray-500 hover:bg-gray-50"
+                                      }`}
+                                  >
+                                    {totalPageChain}
+                                  </button>,
+                                )
+                              }
+
+                              return pages
+                            })()}
+                        </div>
+                        <button
+                          onClick={() => setCurrentPageChain(Math.min(totalPageChain, currentPageChain + 1))}
+                          disabled={currentPageChain === totalPageChain}
+                          className="p-1 font-medium text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                          <ChevronRight className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -811,9 +987,6 @@ const Homepage = () => {
                 <div className="p-6 border-b border-gray-100">
                   <div className="flex items-center justify-between">
                     <h2 className="text-xl font-semibold text-gray-900">Latest Transactions</h2>
-                    <button className="text-blue-600 hover:text-blue-700 text-sm font-medium hover:bg-blue-50 px-3 py-1 rounded-lg transition-colors">
-                      View All
-                    </button>
                   </div>
                 </div>
                 <div className="p-6">
@@ -835,31 +1008,139 @@ const Homepage = () => {
                                 strokeLinecap="round"
                                 strokeLinejoin="round"
                                 strokeWidth={2}
-                                d="M7 16l-4-4m0 0l4-4m-4 4h18"
+                                d="M7 16l-4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
                               />
                             </svg>
                           </div>
                           <div>
-                            <p className="font-medium text-gray-900 font-mono text-sm">{truncateHash(tx.id, 4)}</p>
-                            <p className="text-sm text-gray-500">{formatDistanceToNow(new Date(tx.timestamp))} ago</p>
+                            <p className="font-medium text-gray-900 font-mono text-xs lg:text-sm">{truncateHash(tx.id, 4)}</p>
+                            <p className="text-xs lg:text-sm text-gray-500">{formatDistanceToNow(new Date(tx.timestamp))} ago</p>
                           </div>
                         </div>
                         <div className="text-center">
-                          <p className="text-sm text-gray-500">
+                          <p className="text-xs lg:text-sm text-gray-500">
                             <span className="font-mono">{handleFromToValue(tx.txOuts, tx.publicKey, "from")}</span>
                           </p>
-                          <p className="text-sm text-gray-500">
+                          <p className="text-xs lg:text-sm text-gray-500">
                             → <span className="font-mono">{handleFromToValue(tx.txOuts, tx.publicKey, "to")}</span>
                           </p>
                         </div>
                         <div className="text-right">
-                          <p className="font-medium text-gray-900">
+                          <p className="font-medium text-gray-900 text-xs lg:text-base">
                             {Number(handleFromToValue(tx.txOuts, tx.publicKey, "value")).toFixed(4)} FOZ
                           </p>
                         </div>
                       </div>
                     ))}
                   </div>
+                  {totalPageTransactions > 1 && (
+                    <div className="flex items-center justify-between mt-6 pt-6 border-t border-gray-100">
+                      <div className="text-sm text-gray-500">
+                        Page {currentPageTransactions} of {totalPageTransactions}
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <button
+                          onClick={() => setCurrentPageTransactions(Math.max(1, currentPageTransactions - 1))}
+                          disabled={currentPageTransactions === 1}
+                          className="p-1 text-xs lg:text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                          <ChevronLeft className="h-4 w-4" />
+                        </button>
+                        <div className="flex items-center space-x-1">
+                          {totalPageTransactions <= 5
+                            ?
+                            Array.from({ length: totalPageTransactions }, (_, i) => {
+                              const pageNum = i + 1
+                              return (
+                                <button
+                                  key={pageNum}
+                                  onClick={() => setCurrentPageTransactions(pageNum)}
+                                  className={`px-3 py-2 text-xs lg:text-sm font-medium rounded-lg transition-colors ${currentPageTransactions === pageNum ? "bg-blue-600 text-white" : "text-gray-500 hover:bg-gray-50"
+                                    }`}
+                                >
+                                  {pageNum}
+                                </button>
+                              )
+                            })
+                            : // Show first, middle 3, and last pages when more than 5
+                            (() => {
+                              const pages = []
+                              const startMiddle = Math.max(2, Math.min(currentPageTransactions - 1, totalPageTransactions - 3))
+                              const endMiddle = Math.min(totalPageTransactions - 1, startMiddle + 2)
+
+                              // First page
+                              pages.push(
+                                <button
+                                  key={1}
+                                  onClick={() => setCurrentPageTransactions(1)}
+                                  className={`px-3 py-2 text-xs lg:text-sm font-medium rounded-lg transition-colors ${currentPageTransactions === 1 ? "bg-blue-600 text-white" : "text-gray-500 hover:bg-gray-50"
+                                    }`}
+                                >
+                                  1
+                                </button>,
+                              )
+
+                              // Ellipsis
+                              if (startMiddle > 2) {
+                                pages.push(
+                                  <span key="ellipsis1" className="px-2 text-gray-400">
+                                    ...
+                                  </span>,
+                                )
+                              }
+
+                              // Middle pages
+                              for (let i = startMiddle; i <= endMiddle; i++) {
+                                pages.push(
+                                  <button
+                                    key={i}
+                                    onClick={() => setCurrentPageTransactions(i)}
+                                    className={`px-3 py-2 text-xs lg:text-sm font-medium rounded-lg transition-colors ${currentPageTransactions === i ? "bg-blue-600 text-white" : "text-gray-500 hover:bg-gray-50"
+                                      }`}
+                                  >
+                                    {i}
+                                  </button>,
+                                )
+                              }
+
+                              // Ellipsis
+                              if (endMiddle < totalPageTransactions - 1) {
+                                pages.push(
+                                  <span key="ellipsis2" className="px-2 text-gray-400">
+                                    ...
+                                  </span>,
+                                )
+                              }
+
+                              // Last page
+                              if (totalPageTransactions > 1) {
+                                pages.push(
+                                  <button
+                                    key={totalPageTransactions}
+                                    onClick={() => setCurrentPageTransactions(totalPageTransactions)}
+                                    className={`px-3 py-2 text-xs lg:text-sm font-medium rounded-lg transition-colors ${currentPageTransactions === totalPageTransactions
+                                      ? "bg-blue-600 text-white"
+                                      : "text-gray-500 hover:bg-gray-50"
+                                      }`}
+                                  >
+                                    {totalPageTransactions}
+                                  </button>,
+                                )
+                              }
+
+                              return pages
+                            })()}
+                        </div>
+                        <button
+                          onClick={() => setCurrentPageTransactions(Math.min(totalPageTransactions, currentPageTransactions + 1))}
+                          disabled={currentPageTransactions === totalPageTransactions}
+                          className="p-1 font-medium text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                          <ChevronRight className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -914,11 +1195,10 @@ const Homepage = () => {
               <li key={item.id}>
                 <button
                   onClick={() => setActiveTab(item.id)}
-                  className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-left transition-all ${
-                    activeTab === item.id
-                      ? "bg-blue-50 text-blue-700 border border-blue-200 shadow-sm"
-                      : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
-                  }`}
+                  className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-left transition-all ${activeTab === item.id
+                    ? "bg-blue-50 text-blue-700 border border-blue-200 shadow-sm"
+                    : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+                    }`}
                 >
                   {item.icon}
                   <span className="font-medium">{item.label}</span>

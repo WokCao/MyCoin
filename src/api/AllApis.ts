@@ -1,6 +1,7 @@
 import axios from "axios"
-import type { BlockI } from "../interface/Block";
 import type { TransactionI } from "../interface/Transaction";
+import type { TransactionPagI } from "../interface/TransactionPag";
+import type { ChainPagI } from "../interface/ChainPag";
 const BASE_URL = "http://localhost:3000";
 
 export const getPorfolio = async (address: string): Promise<number> => {
@@ -25,14 +26,19 @@ export const faucet = async (address: string, publicKey: string, amount = 50) =>
     }
 };
 
-export const getBlock = async (): Promise<BlockI[]> => {
+export const getBlock = async ({ page = 1 }: { page?: number }): Promise<ChainPagI> => {
     try {
-        const res = await axios.get(`${BASE_URL}/chain`)
+        const res = await axios.get(`${BASE_URL}/chain?page=${page}`)
 
         return res.data
     } catch (err) {
         // console.error("Failed to fetch blocks", err)
-        return []
+        return {
+            blocks: [],
+            currentPage: 1,
+            totalPages: 1,
+            totalBlocks: 0
+        }
     }
 }
 
@@ -86,15 +92,20 @@ export const getConfirmedTransactions = async (): Promise<number> => {
         const res = await axios.get(`${BASE_URL}/confirmedTransactions`)
         return res.data
     } catch (err) {
-        return 0    
+        return 0
     }
 }
 
-export const getTransactions = async (): Promise<TransactionI[]> => {
+export const getTransactions = async ({ page = 1 }: { page?: number }): Promise<TransactionPagI> => {
     try {
-        const res = await axios.get(`${BASE_URL}/transactions`)
-        return res.data
+        const res = await axios.get(`${BASE_URL}/transactions?page=${page}`)
+        return res.data as TransactionPagI
     } catch (err) {
-        return []
+        return {
+            transactions: [],
+            currentPage: 1,
+            totalPages: 1,
+            totalTransactions: 0
+        }
     }
 }
