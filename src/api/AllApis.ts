@@ -2,6 +2,7 @@ import axios from "axios"
 import type { TransactionI } from "../interface/Transaction";
 import type { TransactionPagI } from "../interface/TransactionPag";
 import type { ChainPagI } from "../interface/ChainPag";
+import type { UnspentTxOI } from "../interface/UnspentTxO";
 const BASE_URL = "http://localhost:3000";
 
 export const getPorfolio = async (address: string): Promise<number> => {
@@ -42,16 +43,11 @@ export const getBlock = async ({ page = 1 }: { page?: number }): Promise<ChainPa
     }
 }
 
-export const sendCoin = async (fromAddress: string, toAddress: string, amount: number, privateKey: string, publicKey: string): Promise<boolean> => {
+export const sendCoin = async (transaction: TransactionI): Promise<boolean> => {
     try {
-        const body = {
-            fromAddress,
-            toAddress,
-            amount,
-            privateKey,
-            publicKey
-        }
-        await axios.post(`${BASE_URL}/send`, body)
+        await axios.post(`${BASE_URL}/send`, transaction, {
+            headers: { "Content-Type": "application/json" }
+        });
         return true
     } catch (err) {
         // console.error("Failed to send coins", err)
@@ -84,6 +80,15 @@ export const getAllUnspent = async (): Promise<number> => {
         return res.data
     } catch (err) {
         return 0
+    }
+}
+
+export const getAvailableUnspent = async (address: string): Promise<UnspentTxOI[]> => {
+    try {
+        const res = await axios.get(`${BASE_URL}/unspent/${address}`)
+        return res.data
+    } catch (err) {
+        return []
     }
 }
 

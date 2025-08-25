@@ -11,9 +11,9 @@ const AccessOverview = ({ header }: { header: JSX.Element }) => {
                 </div>
 
                 <div className="space-y-4 mb-8">
-                    <div className="px-4 py-10 hover:shadow-md transition-shadow cursor-pointer rounded-lg border border-gray-200">
-                        <div className="w-full">
-                            <Link to='/wallet/access/software?type=keystore'>
+                    <div className="hover:shadow-md transition-shadow cursor-pointer rounded-lg border border-gray-200">
+                        <Link to='/wallet/access/software?type=keystore'>
+                            <div className="px-4 py-10">
                                 <div className="flex items-center justify-between gap-4 w-full">
                                     <div>
                                         <h3 className="font-semibold text-gray-900 text-sm lg:text-base">Keystore</h3>
@@ -22,13 +22,13 @@ const AccessOverview = ({ header }: { header: JSX.Element }) => {
                                         <FileJson className="w-6 h-6 text-teal-600" />
                                     </div>
                                 </div>
-                            </Link>
-                        </div>
+                            </div>
+                        </Link>
                     </div>
 
-                    <div className="px-4 py-10 hover:shadow-md transition-shadow cursor-pointer rounded-lg border border-gray-200">
-                        <div className="w-full">
-                            <Link to='/wallet/access/software?type=mnemonic'>
+                    <div className="hover:shadow-md transition-shadow cursor-pointer rounded-lg border border-gray-200">
+                        <Link to='/wallet/access/software?type=mnemonic'>
+                            <div className="px-4 py-10">
                                 <div className="flex items-center justify-between gap-4 w-full">
                                     <div>
                                         <h3 className="font-semibold text-gray-900 text-sm lg:text-base">Mnemonic Phrase</h3>
@@ -37,12 +37,12 @@ const AccessOverview = ({ header }: { header: JSX.Element }) => {
                                         <FileText className="w-6 h-6 text-teal-600" />
                                     </div>
                                 </div>
-                            </Link>
-                        </div>
+                            </div>
+                        </Link>
                     </div>
 
-                    <div className="px-4 py-10 hover:shadow-md transition-shadow cursor-pointer rounded-lg border border-gray-200">
-                        <div className="w-full">
+                    <div className="hover:shadow-md transition-shadow cursor-pointer rounded-lg border border-gray-200">
+                        <div className="px-4 py-10">
                             <div className="flex items-center justify-between gap-4 w-full">
                                 <div>
                                     <h3 className="font-semibold text-gray-900 text-sm lg:text-base">Private Key</h3>

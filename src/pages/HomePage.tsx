@@ -3,6 +3,7 @@ import { useEffect, useState } from "react"
 import {
   faucet,
   getAllUnspent,
+  getAvailableUnspent,
   getBlock,
   getConfirmedTransactions,
   getPending,
@@ -24,6 +25,8 @@ import type { ChainPagI } from "../interface/ChainPag"
 import { Box, ChevronLeft, ChevronRight, NotepadText } from "lucide-react"
 import BlockPanel from "../components/BlockPanel"
 import TransactionPanel from "../components/TransactionPanel"
+import type { TxIn } from "../interface/TxIn"
+import type { UnspentTxOI } from "../interface/UnspentTxO"
 
 const ec = new elliptic.ec("secp256k1")
 const FOZ_PRICE = 100.12345
@@ -63,6 +66,8 @@ const Homepage = () => {
   const [currentPageTransactions, setCurrentPageTransactions] = useState(1)
   /** Total page of transactions */
   const [totalPageTransactions, setTotalPageTransactions] = useState(1)
+  /** Available UTXO */
+  const [availableUTXO, setAvailableUTXO] = useState<UnspentTxOI[]>([])
 
   const [selectedBlock, setSelectedBlock] = useState<BlockI | null>(null)
   const [selectedTransaction, setSelectedTransaction] = useState<TransactionI | null>(null)
@@ -89,7 +94,7 @@ const Homepage = () => {
     setTimeout(() => setSelectedTransaction(null), 300)
   }
 
-  const { wallet } = useWallet()
+  const { wallet, clearWallet } = useWallet()
   const navigate = useNavigate()
 
   /** Call API to get wallet's coins */
@@ -125,23 +130,34 @@ const Homepage = () => {
     }
   }
 
+  /** Generate transaction id */
+  const handleGenerateTransactionId = (transaction: TransactionI) => {
+    const txInContent = transaction.txIns
+      .map(txIn => txIn.txOutId + txIn.txOutIndex + txIn.signature)
+      .join("");
+
+    const txOutContent = transaction.txOuts
+      .map(txOut => txOut.address + txOut.amount)
+      .join("");
+
+    return CryptoJS.SHA256(txInContent + txOutContent).toString();
+  }
+
   /** Send the coins to a desired address */
   const handleSendCoin = async () => {
     if (wallet && !exceedBalance && coinToTransfer) {
-      const response = await sendCoin(
-        wallet.address,
-        toAddress,
-        coinToTransfer,
-        wallet.privateKey,
-        ec.keyFromPrivate(wallet.privateKey, "hex").getPublic().encode("hex", false),
-      )
-      if (response) {
-        handleGetPorfolio()
-        setToAddress("")
-        setCoinToTransfer(0)
-        setSendingCoinSuccessful(true)
-      } else {
-        setSendingCoinSuccessful(false)
+      const tx = handleGeneratingSendingTransaction()
+      if (tx) {
+        const response = await sendCoin(tx)
+
+        if (response) {
+          handleGetPorfolio()
+          setToAddress("")
+          setCoinToTransfer(0)
+          setSendingCoinSuccessful(true)
+        } else {
+          setSendingCoinSuccessful(false)
+        }
       }
     }
   }
@@ -167,7 +183,6 @@ const Homepage = () => {
   /** Get transactions */
   const handleGetTransactions = async () => {
     const data: TransactionPagI = await getTransactions({ page: currentPageTransactions })
-    console.log(data)
     setConfirmedTransactions(data.transactions)
     setTotalPageTransactions(data.totalPages)
   }
@@ -206,6 +221,77 @@ const Homepage = () => {
     }
   }
 
+  /** Handle get all available unspent of an address */
+  const handleGetAvailableUnspent = async () => {
+    if (wallet) {
+      const data = await getAvailableUnspent(wallet.address)
+      setAvailableUTXO(data)
+    }
+  }
+
+  /** Create sending transaction */
+  const handleGeneratingSendingTransaction = (): TransactionI | undefined => {
+    if (wallet && coinToTransfer) {
+      if (availableUTXO.length === 0) {
+        setExceedBalance(true)
+        return
+      }
+
+      let accumulated = 0
+      const selectedUTXOs: UnspentTxOI[] = [];
+      for (const utxo of availableUTXO) {
+        accumulated += utxo.amount;
+        selectedUTXOs.push(utxo)
+
+        if (accumulated >= coinToTransfer) break;
+      }
+
+      /** Create TxIn[] */
+      const txIns: TxIn[] = []
+      for (const utxo of selectedUTXOs) {
+        const msgHash = `${utxo.txOutId}:${utxo.txOutIndex}:${toAddress}:${coinToTransfer}`;
+        const key = ec.keyFromPrivate(wallet.privateKey, "hex");
+
+        const txIn: TxIn = {
+          txOutId: utxo.txOutId,
+          txOutIndex: utxo.txOutIndex,
+          signature: key.sign(msgHash).toDER("hex")
+        }
+
+        txIns.push(txIn)
+      }
+
+      /** Create TxOut[] */
+      const txOuts: TxOut[] = []
+      txOuts.push({
+        address: toAddress,
+        amount: coinToTransfer,
+        txIndex: txOuts.length
+      })
+
+      let change = accumulated - coinToTransfer
+      if (change > 0) {
+        txOuts.push({
+          address: wallet.address,
+          amount: change,
+          txIndex: txOuts.length
+        })
+      }
+
+      const tx: TransactionI = {
+        publicKey: ec.keyFromPrivate(wallet.privateKey, "hex").getPublic().encode("hex", false),
+        txIns,
+        txOuts,
+        timestamp: Date.now(),
+        id: ''
+      }
+
+      tx.id = handleGenerateTransactionId(tx)
+
+      return tx
+    }
+  }
+
   /** Format time */
   const formatTimestamp = (timestamp: number) => {
     return new Date(timestamp).toLocaleString()
@@ -217,12 +303,16 @@ const Homepage = () => {
   }
 
   /** Handle from, to, value */
-  const handleFromToValue = (txOuts: TxOut[], publicKey: string, type: "from" | "to" | "value" = "from") => {
+  const handleFromToValue = (txOuts: TxOut[], publicKey: string, type: "from" | "to" | "value" = "from", txIns?: TxIn[]) => {
     if (type === "from") {
+      if (txIns && (txIns.length === 0 || txIns.length > 0 && txIns[0].txOutIndex === -1)) {
+        return 'System'
+      }
+
       const filterTxOuts = txOuts.filter((txOut) => txOut.address === getAddresFromPublicKey(publicKey))
       if (filterTxOuts.length > 0) {
         return truncateHash(filterTxOuts[0].address, 6)
-      } else return 'System'
+      }
     } else if (type === "to") {
       const filterTxOuts = txOuts.filter((txOut) => txOut.address !== getAddresFromPublicKey(publicKey))
       if (filterTxOuts.length > 0) {
@@ -252,6 +342,7 @@ const Homepage = () => {
         setToAddress("")
         setCoinToTransfer(undefined)
         setSendingCoinSuccessful(true)
+        handleGetAvailableUnspent()
         break
       }
       case "mining": {
@@ -270,6 +361,14 @@ const Homepage = () => {
         break
       }
     }
+  }
+
+  /** Handle logout */
+  const handleLogout = () => {
+    if (wallet) {
+      clearWallet()
+    }
+    navigate('/wallet/access')
   }
 
   useEffect(() => {
@@ -831,7 +930,7 @@ const Homepage = () => {
                           <p className="text-xs lg:text-sm text-blue-500 hover:underline hover:cursor-pointer" onClick={() => handleBlockClick(block)}>{block.transactions.length} txns</p>
                         </div>
                         <div className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs lg:text-sm font-medium">
-                          {((block.index !== 0 && block.transactions[0]?.txIns?.length > 0) ? 0.01 : 0).toFixed(2)} FOZ
+                          {((block.index !== 0 && block.transactions[0]?.txIns[0]?.txOutIndex !== -1) ? 0.01 : 0).toFixed(2)} FOZ
                         </div>
                       </div>
                     ))}
@@ -961,18 +1060,18 @@ const Homepage = () => {
                         key={index}
                         className="flex items-center justify-between p-4 hover:bg-gray-50 rounded-lg transition-colors"
                       >
-                        <div className="flex items-center space-x-4">
+                        <div className="flex items-center space-x-4 w-1/2 lg:w-1/3">
                           <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center">
                             <NotepadText className="w-5 h-5 text-emerald-600" />
                           </div>
                           <div>
-                            <p className="font-medium text-blue-900 font-mono text-xs lg:text-sm hover:underline hover:cursor-pointer"  onClick={() => handleTransactionClick(tx)}>{truncateHash(tx.id, 4)}</p>
+                            <p className="font-medium text-blue-900 font-mono text-xs lg:text-sm hover:underline hover:cursor-pointer" onClick={() => handleTransactionClick(tx)}>{truncateHash(tx.id, 4)}</p>
                             <p className="text-xs lg:text-sm text-gray-500">{formatDistanceToNow(new Date(tx.timestamp))} ago</p>
                           </div>
                         </div>
                         <div className="text-center">
                           <p className="text-xs lg:text-sm text-blue-500">
-                            <span className="font-mono hover:underline hover:cursor-pointer">{handleFromToValue(tx.txOuts, tx.publicKey, "from")}</span>
+                            <span className="font-mono hover:underline hover:cursor-pointer">{handleFromToValue(tx.txOuts, tx.publicKey, "from", tx.txIns)}</span>
                           </p>
                           <p className="text-xs lg:text-sm text-blue-500">
                             → <span className="font-mono hover:underline hover:cursor-pointer">{handleFromToValue(tx.txOuts, tx.publicKey, "to")}</span>
@@ -1162,7 +1261,7 @@ const Homepage = () => {
         </nav>
 
         <div className="absolute bottom-6 left-4 right-4">
-          <button className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-left text-red-600 hover:bg-red-50 transition-colors">
+          <button className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-left text-red-600 hover:bg-red-50 transition-colors" onClick={handleLogout}>
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
