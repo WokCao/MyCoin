@@ -21,7 +21,9 @@ import type { TransactionI } from "../interface/Transaction"
 import type { TxOut } from "../interface/TxOut"
 import type { TransactionPagI } from "../interface/TransactionPag"
 import type { ChainPagI } from "../interface/ChainPag"
-import { ChevronLeft, ChevronRight } from "lucide-react"
+import { Box, ChevronLeft, ChevronRight, NotepadText } from "lucide-react"
+import BlockPanel from "../components/BlockPanel"
+import TransactionPanel from "../components/TransactionPanel"
 
 const ec = new elliptic.ec("secp256k1")
 const FOZ_PRICE = 100.12345
@@ -53,10 +55,6 @@ const Homepage = () => {
   const [pendingTransactions, setPendingTransactions] = useState<TransactionI[]>([])
   /** Confirmed transactions */
   const [confirmedTransactions, setConfirmedTransactions] = useState<TransactionI[]>([])
-  /** Search query for transaction explorer */
-  const [searchQuery, setSearchQuery] = useState("")
-  /** Search filter type for transaction explorer */
-  const [searchFilter, setSearchFilter] = useState("all")
   /** Current page of chain */
   const [currentPageChain, setCurrentPageChain] = useState(1)
   /** Total page of chain */
@@ -65,6 +63,31 @@ const Homepage = () => {
   const [currentPageTransactions, setCurrentPageTransactions] = useState(1)
   /** Total page of transactions */
   const [totalPageTransactions, setTotalPageTransactions] = useState(1)
+
+  const [selectedBlock, setSelectedBlock] = useState<BlockI | null>(null)
+  const [selectedTransaction, setSelectedTransaction] = useState<TransactionI | null>(null)
+  const [isBlockPanelOpen, setIsBlockPanelOpen] = useState(false)
+  const [isTransactionPanelOpen, setIsTransactionPanelOpen] = useState(false)
+
+  const handleBlockClick = (block: BlockI) => {
+    setSelectedBlock(block)
+    setIsBlockPanelOpen(true)
+  }
+
+  const handleTransactionClick = (transaction: TransactionI) => {
+    setSelectedTransaction(transaction)
+    setIsTransactionPanelOpen(true)
+  }
+
+  const closeBlockPanel = () => {
+    setIsBlockPanelOpen(false)
+    setTimeout(() => setSelectedBlock(null), 300)
+  }
+
+  const closeTransactionPanel = () => {
+    setIsTransactionPanelOpen(false)
+    setTimeout(() => setSelectedTransaction(null), 300)
+  }
 
   const { wallet } = useWallet()
   const navigate = useNavigate()
@@ -711,52 +734,6 @@ const Homepage = () => {
               <p className="text-gray-600">Real-time blockchain data and transaction history</p>
             </div>
 
-            {/* Enhanced search bar with filter dropdown */}
-            <div className="bg-white rounded-xl shadow-sm border p-6">
-              <div className="flex items-center space-x-4">
-                <div className="relative">
-                  <select
-                    value={searchFilter}
-                    onChange={(e) => setSearchFilter(e.target.value)}
-                    className="appearance-none bg-gray-50 border border-gray-300 rounded-lg px-4 py-3 pr-10 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-                  >
-                    <option value="all">All Filters</option>
-                    <option value="address">Address</option>
-                    <option value="txn">Txn Hash</option>
-                    <option value="block">Block</option>
-                  </select>
-                  <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </div>
-                </div>
-                <div className="flex-1 relative">
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search by Address / Txn Hash / Block"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-                    onKeyDown={(e) => e.key === "Enter"}
-                  />
-                </div>
-                <button
-                  onClick={() => { }}
-                  className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors shadow-sm"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                    />
-                  </svg>
-                </button>
-              </div>
-            </div>
-
             {/* Enhanced metrics section */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl shadow-sm border border-blue-200 p-6">
@@ -838,22 +815,10 @@ const Homepage = () => {
                       >
                         <div className="flex items-center space-x-4 w-1/2 lg:w-1/3">
                           <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                            <svg
-                              className="w-5 h-5 text-blue-600"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 00-2 2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
-                              />
-                            </svg>
+                            <Box className="w-5 h-5 text-blue-600" />
                           </div>
                           <div>
-                            <p className="font-medium text-gray-900">Block #{block.index}</p>
+                            <p className="font-medium text-blue-900 hover:underline hover:cursor-pointer" onClick={() => handleBlockClick(block)}>Block #{block.index}</p>
                             <p className="text-sm text-gray-500">
                               {formatDistanceToNow(new Date(block.timestamp))} ago
                             </p>
@@ -863,7 +828,7 @@ const Homepage = () => {
                           <p className="text-xs lg:text-sm font-mono text-gray-900">
                             {block.index !== 0 ? truncateHash(block.minerAddress, 4) : "Genesis"}
                           </p>
-                          <p className="text-xs lg:text-sm text-gray-500">{block.transactions.length} txns</p>
+                          <p className="text-xs lg:text-sm text-blue-500 hover:underline hover:cursor-pointer" onClick={() => handleBlockClick(block)}>{block.transactions.length} txns</p>
                         </div>
                         <div className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs lg:text-sm font-medium">
                           {((block.index !== 0 && block.transactions[0]?.txIns?.length > 0) ? 0.01 : 0).toFixed(2)} FOZ
@@ -998,31 +963,19 @@ const Homepage = () => {
                       >
                         <div className="flex items-center space-x-4">
                           <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center">
-                            <svg
-                              className="w-5 h-5 text-emerald-600"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M7 16l-4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-                              />
-                            </svg>
+                            <NotepadText className="w-5 h-5 text-emerald-600" />
                           </div>
                           <div>
-                            <p className="font-medium text-gray-900 font-mono text-xs lg:text-sm">{truncateHash(tx.id, 4)}</p>
+                            <p className="font-medium text-blue-900 font-mono text-xs lg:text-sm hover:underline hover:cursor-pointer"  onClick={() => handleTransactionClick(tx)}>{truncateHash(tx.id, 4)}</p>
                             <p className="text-xs lg:text-sm text-gray-500">{formatDistanceToNow(new Date(tx.timestamp))} ago</p>
                           </div>
                         </div>
                         <div className="text-center">
-                          <p className="text-xs lg:text-sm text-gray-500">
-                            <span className="font-mono">{handleFromToValue(tx.txOuts, tx.publicKey, "from")}</span>
+                          <p className="text-xs lg:text-sm text-blue-500">
+                            <span className="font-mono hover:underline hover:cursor-pointer">{handleFromToValue(tx.txOuts, tx.publicKey, "from")}</span>
                           </p>
-                          <p className="text-xs lg:text-sm text-gray-500">
-                            → <span className="font-mono">{handleFromToValue(tx.txOuts, tx.publicKey, "to")}</span>
+                          <p className="text-xs lg:text-sm text-blue-500">
+                            → <span className="font-mono hover:underline hover:cursor-pointer">{handleFromToValue(tx.txOuts, tx.publicKey, "to")}</span>
                           </p>
                         </div>
                         <div className="text-right">
@@ -1246,6 +1199,19 @@ const Homepage = () => {
 
         <div className="p-8">{renderContent()}</div>
       </div>
+
+      <BlockPanel
+        block={selectedBlock}
+        isOpen={isBlockPanelOpen}
+        onClose={closeBlockPanel}
+        onTransactionClick={handleTransactionClick}
+      />
+
+      <TransactionPanel
+        transaction={selectedTransaction}
+        isOpen={isTransactionPanelOpen}
+        onClose={closeTransactionPanel}
+      />
     </div>
   )
 }
